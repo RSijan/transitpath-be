@@ -6,11 +6,33 @@ public class Stop {
   private final double lat;
   private final double lon;
 
+  // Farthest another stop can be at a walking distance to this stop
+  // cuz it takes too long to walk to that stop
+  private static final double MAX_PROXIMITY_WALKING_DISTANCE_METRES = 500;
+  // Converting that distance to degree
+  private static final double MAX_DIST_DEG_LAT = MAX_PROXIMITY_WALKING_DISTANCE_METRES / 111000.0;
+
   public Stop(String id, String name, double lat, double lon) {
     this.id = id;
     this.name = name;
     this.lat = lat;
     this.lon = lon;
+  }
+
+  public boolean isWithinProximity(Stop other) {
+    if (other == null || this.equals(other)) {
+      return false;
+    }
+
+    double cosLat = Math.cos(this.lat);
+    double maxDisDegLon = MAX_PROXIMITY_WALKING_DISTANCE_METRES / (111000.0 * cosLat);
+
+    // Check if The other stop is outside the bounding box that we set (max walking distance)
+    if (Math.abs(this.lat - other.lat) > MAX_DIST_DEG_LAT || Math.abs(this.lon - other.lon) > maxDisDegLon) {
+      return false;
+    }
+    return true;
+
   }
 
   public String getId() {

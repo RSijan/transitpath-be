@@ -1,4 +1,5 @@
 import model.*;
+import pathfinder.ShortestPathFinder;
 
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,15 @@ public class Main {
       GraphBuilder graphBuilder = new GraphBuilder(routes, stops, trips, stop_times);
       graphBuilder.buildGraph();
       Map<String, List<Edge>> graph = graphBuilder.getGraph();
+
+      ShortestPathFinder shortestPathFinder = new ShortestPathFinder(graph, routes, stops, trips);
+      List<String> answer = shortestPathFinder.aStar("DELIJN-509014",
+              "SNCB-S8866654",
+              37800);
+      System.out.println(answer.size());
+      for (String s : answer) {
+        System.out.println(s);
+      }
 
     } else {
       System.err.println("Data loading process FAILED .");

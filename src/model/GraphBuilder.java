@@ -1,5 +1,7 @@
 package model;
 
+import utils.TransitDurationCalculator;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -41,6 +43,7 @@ public class GraphBuilder {
     }
     LOGGER.info("Initialized graph with " + graph.size() + " potential nodes. ");
 
+    // put trip edges to graph
     for (var entry : trips_.entrySet()) {
       String trip_id = entry.getKey();
       List<StopTime> stop_times = stop_times_.get(trip_id);
@@ -68,10 +71,27 @@ public class GraphBuilder {
         graph.computeIfAbsent(current_stop_id, k -> new ArrayList<>()).add(edge);
       }
     }
+
+    // Parallely build walking edges for every stop
+    stops_.values().parallelStream().forEach(stopA -> {
+      stops_.values().forEach(stopB -> {
+        if (!stopA.equals(stopB) && stopA.isWithinProximity(stopB)) {
+          int walkDuration = TransitDurationCalculator.calculateWalkDuration(stopA, stopB);
+          if (walkDuration != Integer.MAX_VALUE) {
+            synchronized (graph) {
+              graph.get(stopA.getId()).add(new WalkingEdge(stopB, walkDuration));
+              graph.get(stopB.getId()).add(new WalkingEdge(stopA, walkDuration));
+            }
+          }
+        }
+      });
+    });
+
+    // DEBUG
     long end_time = System.nanoTime();
-    long duration_ms = TimeUnit.NANOSECONDS.toSeconds(end_time - start_time);
+    long duration_s = TimeUnit.NANOSECONDS.toSeconds(end_time - start_time);
     LOGGER.info("Graph construction complete.");
-    LOGGER.info("Total graph build duration: " + duration_ms + " ms.");
+    LOGGER.info("Total graph build duration: " + duration_s + " s.");
 
     long total_edges = 0;
     for (List<Edge> edge : graph.values()) {

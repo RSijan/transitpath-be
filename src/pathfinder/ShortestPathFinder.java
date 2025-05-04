@@ -1,0 +1,189 @@
+package pathfinder;
+
+import model.*;
+import utils.TransitDurationCalculator;
+
+import java.util.*;
+
+public class ShortestPathFinder {
+  private final Map<String, List<Edge>> graph_;
+  private final Map<String, Route> routes_;
+  private final Map<String, Stop> stops_;
+  private final Map<String, Trip> trips_;
+
+  public ShortestPathFinder(Map<String, List<Edge>> graph,
+                            Map<String, Route> routes,
+                            Map<String, Stop> stops,
+                            Map<String, Trip> trips) {
+    graph_ = graph;
+    routes_ = routes;
+    stops_ = stops;
+    trips_ = trips;
+  }
+
+  public List<String> aStar(String start_stop_id, String target_stop_id, int departureTimeSec){
+    Stop target_stop = stops_.get(target_stop_id);
+    Stop start_stop = stops_.get(start_stop_id);
+    Map<String, Integer> h_cache = new HashMap<>();
+    for (String id : stops_.keySet()) {
+      Stop s = stops_.get(id);
+      int duration = TransitDurationCalculator.calculateTotalDuration(s, target_stop);
+      h_cache.put(id, duration);
+    }
+
+    PriorityQueue<State> open = new PriorityQueue<>(
+            (a, b) -> Integer.compare(
+                    a.total_elapsed_time + h_cache.get(a.stop_id),
+                    b.total_elapsed_time + h_cache.get(b.stop_id)
+            )
+    );
+    open.add(new State(start_stop_id, departureTimeSec, 0, null, null));
+
+    Map<String, State> best = new HashMap<>();
+
+    while(!open.isEmpty()) {
+      State current = open.poll();
+
+      if (current.stop_id.equals(target_stop_id)) {
+        return reconstructItinerary(current);
+      }
+
+      if ((best.containsKey(current.stop_id) &&
+          (best.get(current.stop_id).total_elapsed_time) <= current.total_elapsed_time)) {
+        continue;
+      }
+      best.put(current.stop_id, current);
+
+      for (Edge edge : graph_.get(current.stop_id)) {
+        int travel_time = 0;
+        if (edge instanceof TripEdge trip_edge) {
+          int departure = trip_edge.getDepartureTimeSec();
+          if (departure < current.current_time_sec) continue;
+
+          int wait_time = departure - current.current_time_sec;
+          int ride_time = trip_edge.getArrivalTimeSec()   - trip_edge.getDepartureTimeSec();
+          int new_elapsed_time = current.total_elapsed_time + wait_time + ride_time;
+          int arrival_time = current.current_time_sec + wait_time + ride_time;
+
+          State next = new State(
+                  trip_edge.getTarget().getId(),
+                  arrival_time,
+                  new_elapsed_time,
+                  current, edge
+          );
+
+          open.add(next);
+        } else if (edge instanceof WalkingEdge walking_edge) {
+          int duration = walking_edge.getDurationSec();
+          State next = new State(
+                  walking_edge.getTarget().getId(),
+                  current.current_time_sec + duration,
+                  current.total_elapsed_time + duration,
+                  current, edge
+          );
+          open.add(next);
+        }
+      }
+    }
+    return List.of();
+  }
+
+  private List<String> reconstructItinerary(State goalState) {
+    List<State> state_chain = new ArrayList<>();
+    // Add all the previous states to a list
+    for (State current_state = goalState; current_state != null; current_state = current_state.previous_state) {
+      state_chain.add(current_state);
+    }
+    Collections.reverse(state_chain); // Since we now have all the states from start to end
+    // We just have to print them properly
+
+    List<String> result = new ArrayList<>();
+    int i = 1;
+    while (i < state_chain.size()) {
+      State previous_state = state_chain.get(i-1);
+      State current_state = state_chain.get(i);
+      Edge edge_taken = current_state.edge_taken;
+
+      if (edge_taken instanceof WalkingEdge walk_edge) {
+        String previous_stop_name = stops_.get(previous_state.stop_id).getName();
+        String current_stop_name = stops_.get(current_state.stop_id).getName();
+
+        result.add(String.format("Walk from %s (%s) to %s (%s)",
+                previous_stop_name,
+                formatTime(previous_state.current_time_sec),
+                current_stop_name,
+                formatTime(current_state.current_time_sec)));
+        i++;
+        continue;
+      }
+      TripEdge trip_edge = (TripEdge)edge_taken;
+      String agency = getAgencyFromId(trip_edge.getTripId());
+      String trip_id = trip_edge.getTripId();
+      String route_id = trips_.get(trip_id).getRouteID();
+      String route_number = routes_.get(route_id).getShortName();
+      String route_type = routes_.get(route_id).getRouteType();
+      String previous_stop_name = stops_.get(previous_state.stop_id).getName();
+      String departure_time = formatTime(trip_edge.getDepartureTimeSec());
+      String ride_key = agency + "_" + route_number;
+
+      int j = i + 1;
+      State last_state = current_state;
+      while(j < state_chain.size()) {
+        Edge nextEdge = state_chain.get(j).edge_taken;
+        if (!(nextEdge instanceof TripEdge)) break;
+        TripEdge te = (TripEdge)nextEdge;
+        String nextKey = getAgencyFromId(te.getTripId()) + "_" + route_type;
+        if (! nextKey.equals(ride_key)) break;
+        last_state = state_chain.get(j);
+        j++;
+      }
+
+      TripEdge last_edge = (TripEdge)last_state.edge_taken;
+      String current_stop_name = stops_.get(last_state.stop_id).getName();
+      String arrival_time = formatTime(last_edge.getArrivalTimeSec());
+
+      result.add(String.format("Take %s %s %s from %s (%s) to %s (%s)",
+              agency,
+              route_type,
+              route_number,
+              previous_stop_name,
+              departure_time,
+              current_stop_name,
+              arrival_time));
+      i = j;
+    }
+    return result;
+  }
+
+  private String formatTime(int seconds) {
+    int hour = seconds / 3600;
+    int min = seconds % 3600 / 60;
+    int sec = seconds % 60;
+    return String.format("%02d:%02d:%02d", hour, min, sec);
+  }
+
+  private String getAgencyFromId(String tripId) {
+    if (tripId.startsWith("STIB")) return "STIB";
+    if (tripId.startsWith("SNCB")) return "SNCB";
+    if (tripId.startsWith("DELIJN")) return "DELIJN";
+    if (tripId.startsWith("TEC")) return "TEC";
+    return "UNKNOWN";
+  }
+
+  private class State {
+    public final String stop_id;
+    public final int current_time_sec;
+    public final int total_elapsed_time;
+    public final State previous_state;
+    public final Edge edge_taken;
+
+    public State(String stop_id, int current_time_sec, int total_elapsed_time, State previous_state, Edge edge_taken) {
+      this.stop_id = stop_id;
+      this.current_time_sec = current_time_sec;
+      this.total_elapsed_time = total_elapsed_time;
+      this.previous_state = previous_state;
+      this.edge_taken = edge_taken;
+    }
+}
+
+}
