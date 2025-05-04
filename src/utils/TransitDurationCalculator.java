@@ -1,16 +1,15 @@
 package utils;
 
-import model.Stop;
-
 import java.util.logging.Logger;
+import model.Stop;
 
 public class TransitDurationCalculator {
 
   private static final int EARTH_RADIUS_METERS = 6371000;
   private static final double AVERAGE_WALKING_SPEED = 1.42;
-  private static final double AVERAGE_TRANSPORT_SPEED = 55;
-  private static final int MAX_WALKING_DURATION_SEC = 900;
-  private static final int MIN_WALKING_DURATION_SEC = 30;
+  private static final double MAX_TRANSPORT_SPEED =  100*1000/3600; // 200 km/h
+  private static final int MAX_WALKING_DURATION_SEC = 1200;
+  private static final int MIN_WALKING_DURATION_SEC = 60;
 
   private static final Logger LOGGER = Logger.getLogger(TransitDurationCalculator.class.getName());
 
@@ -33,7 +32,7 @@ public class TransitDurationCalculator {
 
   public static int calculateTotalDuration(Stop stopA, Stop stopB) {
     double distance = calculateDistance(stopA.getLat(), stopA.getLon(), stopB.getLat(), stopB.getLon());
-    return (int) Math.ceil((distance / AVERAGE_TRANSPORT_SPEED));
+    return (int) Math.ceil((distance / MAX_TRANSPORT_SPEED));
   }
 
   public static int calculateTransitDuration(Stop stopA, Stop stopB, String route_type) {

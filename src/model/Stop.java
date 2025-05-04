@@ -8,7 +8,7 @@ public class Stop {
 
   // Farthest another stop can be at a walking distance to this stop
   // cuz it takes too long to walk to that stop
-  private static final double MAX_PROXIMITY_WALKING_DISTANCE_METRES = 500;
+  private static final double MAX_PROXIMITY_WALKING_DISTANCE_METRES = 2000;
   // Converting that distance to degree
   private static final double MAX_DIST_DEG_LAT = MAX_PROXIMITY_WALKING_DISTANCE_METRES / 111000.0;
 

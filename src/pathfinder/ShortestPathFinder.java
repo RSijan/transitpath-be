@@ -1,9 +1,8 @@
 package pathfinder;
 
+import java.util.*;
 import model.*;
 import utils.TransitDurationCalculator;
-
-import java.util.*;
 
 public class ShortestPathFinder {
   private final Map<String, List<Edge>> graph_;
@@ -23,19 +22,16 @@ public class ShortestPathFinder {
 
   public List<String> aStar(String start_stop_id, String target_stop_id, int departureTimeSec){
     Stop target_stop = stops_.get(target_stop_id);
-    Stop start_stop = stops_.get(start_stop_id);
     Map<String, Integer> h_cache = new HashMap<>();
     for (String id : stops_.keySet()) {
       Stop s = stops_.get(id);
-      int duration = TransitDurationCalculator.calculateTotalDuration(s, target_stop);
-      h_cache.put(id, duration);
+      int estimateDuration = TransitDurationCalculator.calculateTotalDuration(s, target_stop);
+      h_cache.put(id, estimateDuration);
     }
 
     PriorityQueue<State> open = new PriorityQueue<>(
-            (a, b) -> Integer.compare(
-                    a.total_elapsed_time + h_cache.get(a.stop_id),
-                    b.total_elapsed_time + h_cache.get(b.stop_id)
-            )
+      Comparator.comparingInt((State s) -> s.total_elapsed_time + h_cache.get(s.stop_id))
+          .thenComparingInt(s -> s.current_time_sec)
     );
     open.add(new State(start_stop_id, departureTimeSec, 0, null, null));
 
@@ -55,7 +51,6 @@ public class ShortestPathFinder {
       best.put(current.stop_id, current);
 
       for (Edge edge : graph_.get(current.stop_id)) {
-        int travel_time = 0;
         if (edge instanceof TripEdge trip_edge) {
           int departure = trip_edge.getDepartureTimeSec();
           if (departure < current.current_time_sec) continue;
@@ -104,7 +99,7 @@ public class ShortestPathFinder {
       State current_state = state_chain.get(i);
       Edge edge_taken = current_state.edge_taken;
 
-      if (edge_taken instanceof WalkingEdge walk_edge) {
+      if (edge_taken instanceof WalkingEdge) {
         String previous_stop_name = stops_.get(previous_state.stop_id).getName();
         String current_stop_name = stops_.get(current_state.stop_id).getName();
 
@@ -124,7 +119,6 @@ public class ShortestPathFinder {
       String route_type = routes_.get(route_id).getRouteType();
       String previous_stop_name = stops_.get(previous_state.stop_id).getName();
       String departure_time = formatTime(trip_edge.getDepartureTimeSec());
-      String ride_key = agency + "_" + route_number;
 
       int j = i + 1;
       State last_state = current_state;
@@ -132,8 +126,18 @@ public class ShortestPathFinder {
         Edge nextEdge = state_chain.get(j).edge_taken;
         if (!(nextEdge instanceof TripEdge)) break;
         TripEdge te = (TripEdge)nextEdge;
-        String nextKey = getAgencyFromId(te.getTripId()) + "_" + route_type;
-        if (! nextKey.equals(ride_key)) break;
+
+        String next_trip_id = te.getTripId();
+        String next_route_id = trips_.get(next_trip_id).getRouteID();
+        String next_route_number = routes_.get(next_route_id).getShortName();
+        String next_route_type = routes_.get(next_route_id).getRouteType();
+        String next_agency = getAgencyFromId(next_trip_id);
+
+        if (!next_agency.equals(agency) ||
+            !next_route_number.equals(route_number) ||
+            !next_route_type.equals(route_type)) {
+            break;
+        }
         last_state = state_chain.get(j);
         j++;
       }

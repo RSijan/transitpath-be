@@ -175,6 +175,7 @@ public class Parser {
     }
   }
   
+  @SuppressWarnings("LoggerStringConcat")
   private void parseTrips(String trip_file_path) throws IOException, CsvValidationException {
     LOGGER.info("Parsing trips from file: " + trip_file_path);
     try (CSVReader reader = new CSVReader(new FileReader(trip_file_path))) {

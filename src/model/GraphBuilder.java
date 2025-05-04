@@ -1,15 +1,12 @@
 package model;
 
-import utils.TransitDurationCalculator;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import java.util.Comparator;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import utils.TransitDurationCalculator;
 
 public class GraphBuilder {
   // Adjacency list
