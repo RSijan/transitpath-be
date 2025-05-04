@@ -1,9 +1,8 @@
-import model.*;
-import pathfinder.ShortestPathFinder;
-
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Arrays;
+import model.*;
+import pathfinder.ShortestPathFinder;
 
 public class Main {
 
@@ -35,13 +34,6 @@ public class Main {
       Map<String, Trip> trips = parser.getTripsMap();
       Map<String, List<StopTime>> stop_times = parser.getStopTimesMap();
 
-      long stop_times_count = 0;
-      for (List<StopTime> stop_time_list : stop_times.values()) {
-        for (StopTime stop_time : stop_time_list) {
-          stop_times_count++;
-        }
-      }
-
       GraphBuilder graphBuilder = new GraphBuilder(routes, stops, trips, stop_times);
       graphBuilder.buildGraph();
       Map<String, List<Edge>> graph = graphBuilder.getGraph();
@@ -50,6 +42,8 @@ public class Main {
       List<String> answer = shortestPathFinder.aStar("DELIJN-509014",
               "SNCB-S8866654",
               37800);
+
+      // For debug
       System.out.println(answer.size());
       for (String s : answer) {
         System.out.println(s);
