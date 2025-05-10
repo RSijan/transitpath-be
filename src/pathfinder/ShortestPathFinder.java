@@ -94,14 +94,35 @@ public class ShortestPathFinder {
 
     List<String> result = new ArrayList<>();
     int i = 1;
+
+    // This is for a special case: if the last two states are walking edges and they have the same stop names, remove the last one
+    // This specially handles the case where the person has to walk to a stop with the same name at the end of the trip
+    if (state_chain.size() > 1) {
+      State last = state_chain.get(state_chain.size()-1);
+      if (last.edge_taken instanceof WalkingEdge) {
+          State secondLast = state_chain.get(state_chain.size()-2);
+          String lastStopName = stops_.get(last.stop_id).getName();
+          String secondLastStopName = stops_.get(secondLast.stop_id).getName();
+          if (lastStopName.equals(secondLastStopName)) {
+              state_chain.remove(state_chain.size()-1);
+          }
+      }
+  }
+
     while (i < state_chain.size()) {
       State previous_state = state_chain.get(i-1);
       State current_state = state_chain.get(i);
       Edge edge_taken = current_state.edge_taken;
 
-      if (edge_taken instanceof WalkingEdge) {
+      if (edge_taken instanceof WalkingEdge walkingEdge) {
         String previous_stop_name = stops_.get(previous_state.stop_id).getName();
         String current_stop_name = stops_.get(current_state.stop_id).getName();
+
+        int walking_duration = walkingEdge.getDurationSec();
+        if (previous_stop_name.equals(current_stop_name) && walking_duration < 60) {
+          i++;
+          continue;
+        }
 
         result.add(String.format("Walk from %s (%s) to %s (%s)",
                 previous_stop_name,

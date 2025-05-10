@@ -84,6 +84,7 @@ public class InputHandler {
    */
   public static int validateAndParsePreferencesInput(String input) {
     if (input == null || input.trim().isEmpty()) {
+      System.out.println("No preferences selected.");
       return 0;
     }
     if (input.length() > 2) { // I disallowed more than 2 preferences cuz that would just complicate my algorithm
@@ -96,11 +97,13 @@ public class InputHandler {
       char c = input.charAt(0);
       if (c >= '1' && c <= '6') {
         preference = c - '0'; // This bascially does unicode '0' - unicode 'number' to get the int value
+        System.out.println("Preference selected: " + preference);
       }
     } else if (input.length() == 2) { // Check if the two characters are different
       char c1 = input.charAt(0);
       char c2 = input.charAt(1);
       if (c1 != c2 && c1 >= '1' && c1 <= '6' && c2 >= '1' && c2 <= '6') {
+        System.out.println("Preference selected: " + c1 + " and " + c2);
         preference = (c1 - '0') * 10 + (c2 - '0');
       }
     }
@@ -198,9 +201,7 @@ public class InputHandler {
     System.out.println("6. Less metro");
     System.out.println("--------------------------------------------------------");
 
-
     String input = System.console().readLine();
-
     int preference = validateAndParsePreferencesInput(input);
     if (preference == -1) {
       return askAndHandlePreferenceInput();
