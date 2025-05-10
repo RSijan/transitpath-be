@@ -190,7 +190,7 @@ public class InputHandler {
   }
 
   public static int askAndHandlePreferenceInput() {
-    System.out.println("Please select your preference(max. 2)):");
+    System.out.println("Please select your preference(max. 2) (Example: 53 or 1 or 23):");
     System.out.println("--------------------------------------------------------");
     System.out.println("-> Leave empty for no preferences.");
     System.out.println("1. Less transfers");

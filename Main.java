@@ -1,3 +1,4 @@
+import java.sql.Savepoint;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,7 @@ public class Main {
         String answer = System.console().readLine();
         running = answer.equalsIgnoreCase("y");
       }
-      
+
       System.out.println("Thank you for using the Fastest Transit Path Finder!");
     } else {
       System.err.println("Data loading process FAILED .");
@@ -71,7 +72,7 @@ public class Main {
     Stop destination_stop = stops.get(destination_stop_id);
 
     System.out.println("--------------------------------------------------------");
-    System.out.println("Finding path from " + start_stop.getName() + " to " + destination_stop.getName());
+    System.out.println(String.format("Determining fastest path from %s to %s at %s",start_stop.getName(), destination_stop.getName(), formatTime(departure_time_seconds)));
     System.out.println("--------------------------------------------------------");
 
     List<String> result = shortestPathFinder.aStar(start_stop_id, destination_stop_id, departure_time_seconds, preference);
@@ -80,5 +81,12 @@ public class Main {
     for (String path : result) {
       System.out.println(path);
     }
+  }
+
+  private static String formatTime(int seconds) {
+    int hours = seconds / 3600;
+    int minutes = (seconds % 3600) / 60;
+    int secs = seconds % 60;
+    return String.format("%02d:%02d:%02d", hours, minutes, secs);
   }
 }
