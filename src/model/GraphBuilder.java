@@ -38,13 +38,12 @@ public class GraphBuilder {
     for (String stop_id : stops_.keySet()) {
       graph.put(stop_id, new ArrayList<>());
     }
-    LOGGER.info("Initialized graph with " + graph.size() + " potential nodes. ");
+    LOGGER.info(String.format("Initialized graph with %d potential nodes. ", graph.size()));
 
     // put trip edges to graph
     for (var entry : trips_.entrySet()) {
       String trip_id = entry.getKey();
       List<StopTime> stop_times = stop_times_.get(trip_id);
-      List<Edge> edges = new ArrayList<>();
       for (int i = 0; i < stop_times.size() - 1; i++) {
         // Current stop time & Next stop time
         StopTime stop_time = stop_times.get(i);
@@ -88,14 +87,14 @@ public class GraphBuilder {
     long end_time = System.nanoTime();
     long duration_s = TimeUnit.NANOSECONDS.toSeconds(end_time - start_time);
     LOGGER.info("Graph construction complete.");
-    LOGGER.info("Total graph build duration: " + duration_s + " s.");
+    LOGGER.info(String.format("Total graph build duration: %d s.", duration_s));
 
     long total_edges = 0;
     for (List<Edge> edge : graph.values()) {
       total_edges += edge.size();
     }
 
-    LOGGER.info("Total number of edges in graph: " + total_edges);
-    LOGGER.info("Total number of nodes in graph: " + graph.size());
+    LOGGER.info(String.format("Total number of edges in graph: %d", total_edges));
+    LOGGER.info(String.format("Total number of nodes in graph: %d", graph.size()));
   }
 }

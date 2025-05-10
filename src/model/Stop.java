@@ -26,12 +26,8 @@ public class Stop {
 
     double cosLat = Math.cos(this.lat);
     double maxDisDegLon = MAX_PROXIMITY_WALKING_DISTANCE_METRES / (111000.0 * cosLat);
-
-    // Check if The other stop is outside the bounding box that we set (max walking distance)
-    if (Math.abs(this.lat - other.lat) > MAX_DIST_DEG_LAT || Math.abs(this.lon - other.lon) > maxDisDegLon) {
-      return false;
-    }
-    return true;
+    // return false if The other stop is outside the bounding box that we set (max walking distance)
+    return !(Math.abs(this.lat - other.lat) > MAX_DIST_DEG_LAT || Math.abs(this.lon - other.lon) > maxDisDegLon);
 
   }
 

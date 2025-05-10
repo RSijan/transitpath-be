@@ -7,6 +7,12 @@ import pathfinder.ShortestPathFinder;
 public class Main {
 
   public static void main(String[] args) {
+    System.out.println("========================================================");
+    System.out.println("Welcome to the Transit Path Finder!");
+    System.out.println("--------------------------------------------------------");
+    System.out.println("Please wait while we load the transit data...");
+    System.out.println("--------------------------------------------------------");
+    System.out.println("Searching for the shortest path between");
 
     String base_GTFS_directory = "GTFS";
     List<String> agencies = Arrays.asList("DELIJN", "SNCB", "STIB", "TEC");
@@ -15,20 +21,14 @@ public class Main {
             .map(agency -> base_GTFS_directory + "/" + agency)
             .toList();
 
-    System.out.println("========================================================");
-    System.out.println("Attempting to load transit data from ALL agencies:");
     dir_list.forEach(path -> System.out.println("- " + path));
-    System.out.println("========================================================");
 
     Parser parser = new Parser();
-
     boolean success = parser.loadData(dir_list);
 
     System.out.println("\n========================================================");
     if (success) {
-      System.out.println("Data loading process completed successfully!");
-      System.out.println("--------------------------------------------------------");
-
+      System.out.println("Transit data parsing process SUCCESSFUL.");
       Map<String, Route> routes = parser.getRoutesMap();
       Map<String, Stop> stops = parser.getStopsMap();
       Map<String, Trip> trips = parser.getTripsMap();
@@ -37,18 +37,14 @@ public class Main {
       GraphBuilder graphBuilder = new GraphBuilder(routes, stops, trips, stop_times);
       graphBuilder.buildGraph();
       Map<String, List<Edge>> graph = graphBuilder.getGraph();
+      System.out.println("Graph construction process SUCCESSFUL.");
+      System.out.println("Transit data loaded successfully.");
+      System.out.println("--------------------------------------------------------");
 
       ShortestPathFinder shortestPathFinder = new ShortestPathFinder(graph, routes, stops, trips);
-      List<String> answer = shortestPathFinder.aStar("DELIJN-509014",
+      shortestPathFinder.aStar("DELIJN-509014",
               "SNCB-S8866654",
               37800);
-
-      // For debug
-      System.out.println(answer.size());
-      for (String s : answer) {
-        System.out.println(s);
-      }
-
     } else {
       System.err.println("Data loading process FAILED .");
     }

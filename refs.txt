@@ -1,2 +1,6 @@
-https://www.geeksforgeeks.org/typecasting-in-java/
+https://www.geeksforgeeks.org/typecasting-in-java/ // For bug solving
+
+https://www.happycoders.eu/algorithms/a-star-algorithm-java/ // For comprehension
+
+https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/ // For comprenhension and inspiration
 

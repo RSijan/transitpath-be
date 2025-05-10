@@ -35,7 +35,7 @@ public class Parser {
   }
 
   public boolean loadData(List<String> directoryPath) {
-    LOGGER.info("Starting data loading from directory: " + directoryPath);
+    LOGGER.log(Level.INFO, "Starting data loading from directory: {0}", directoryPath);
     long total_start_time = System.nanoTime();
     clearData();
 
@@ -43,10 +43,10 @@ public class Parser {
 
     try {
       for (String path : directoryPath) {
-        LOGGER.info("Loading data from: " + path);
+        LOGGER.log(Level.INFO, "Loading data from: {0}", path);
         Path dir = Paths.get(path);
         if (!Files.isDirectory(dir)) {
-          LOGGER.log(Level.SEVERE, "Path " + path + " is not a directory.");
+          LOGGER.log(Level.SEVERE, "Path {0} is not a directory.", path);
           success = false;
           continue;
         }
@@ -65,7 +65,7 @@ public class Parser {
         sortStopTimesBySequence();
         long total_end_time = System.nanoTime();
         long total_duration_s = TimeUnit.NANOSECONDS.toSeconds(total_end_time - total_start_time);
-        LOGGER.info("Finished all data loading and processing successfully from " + directoryPath.size() + " sources. Total time: " + total_duration_s + " s.");
+        LOGGER.log(Level.INFO, "Finished all data loading and processing successfully from {0} sources. Total time: {1} s.", new Object[]{directoryPath.size(), total_duration_s});
       } else {
         LOGGER.warning("Failure.");
       }
@@ -96,11 +96,11 @@ public class Parser {
     }
     long end_time = System.nanoTime();
     long duration_s = TimeUnit.NANOSECONDS.toSeconds(end_time - start_time);
-    LOGGER.info("Finished sorting stop times. Duration: " + duration_s + " seconds.");
+    LOGGER.log(Level.INFO, "Finished sorting stop times. Duration: {0} seconds.", duration_s);
   }
 
   private void parseRoutes(String route_file_path) throws IOException, CsvValidationException {
-    LOGGER.info("Parsing routes from file: " + route_file_path);
+    LOGGER.log(Level.INFO, "Parsing routes from file: {0}", route_file_path);
     try (CSVReader reader = new CSVReader(new FileReader(route_file_path))) {
       String[] next_line;
       long line_index = 1;
@@ -116,15 +116,15 @@ public class Parser {
             String route_type = next_line[3];
 
             if (id == null || id.isEmpty()) {
-              LOGGER.warning("Skipping route line " + line_index + ": " + route_file_path + ": Missing ID");
+              LOGGER.log(Level.WARNING, "Skipping route line {0}: {1}: Missing ID", new Object[]{line_index, route_file_path});
               continue;
             }
 
             Route route = new Route(id, route_short_name, route_long_name, route_type);
             routes_map.put(id, route);
           } catch (Exception e) {
-            LOGGER.warning("Error processing route line " + line_index + ": " + route_file_path + ": " + e.getMessage());
-            LOGGER.fine("Problematic route data: " + String.join(",", next_line));
+            LOGGER.log(Level.WARNING, "Error processing route line {0}: {1}: {2}", new Object[]{line_index, route_file_path, e.getMessage()});
+            LOGGER.log(Level.FINE, "Problematic route data: {0}", String.join(",", next_line));
           }
         } else {
           LOGGER.warning("Skipping route line " + line_index + ": Expected at least 4 columns, found " + next_line.length);
