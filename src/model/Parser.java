@@ -31,11 +31,9 @@ public class Parser {
     stops_map.clear();
     trips_map.clear();
     stop_times_map.clear();
-    LOGGER.info("All maps have been emptied.");
   }
 
   public boolean loadData(List<String> directoryPath) {
-    LOGGER.info("Starting data loading from directory: " + directoryPath);
     long total_start_time = System.nanoTime();
     clearData();
 
@@ -43,10 +41,9 @@ public class Parser {
 
     try {
       for (String path : directoryPath) {
-        LOGGER.info("Loading data from: " + path);
         Path dir = Paths.get(path);
         if (!Files.isDirectory(dir)) {
-          LOGGER.log(Level.SEVERE, "Path " + path + " is not a directory.");
+          LOGGER.log(Level.SEVERE, "Path {0} is not a directory.", path);
           success = false;
           continue;
         }
@@ -63,17 +60,13 @@ public class Parser {
 
       if (success) {
         sortStopTimesBySequence();
-        long total_end_time = System.nanoTime();
-        long total_duration_s = TimeUnit.NANOSECONDS.toSeconds(total_end_time - total_start_time);
-        LOGGER.info("Finished all data loading and processing successfully from " + directoryPath.size() + " sources. Total time: " + total_duration_s + " s.");
+        // LOGGER.log(Level.INFO, "Finished all data loading and processing successfully from {0} sources. Total time: {1} s.", new Object[]{directoryPath.size(), total_duration_s});
       } else {
         LOGGER.warning("Failure.");
       }
     } catch (IOException | CsvValidationException e) {
-      long total_end_time = System.nanoTime();
-      long total_duration_s = TimeUnit.NANOSECONDS.toSeconds(total_end_time - total_start_time);
       String errorType = (e instanceof IOException) ? "I/O Error" : "CSV Validation Error";
-      LOGGER.log(Level.SEVERE, errorType + " during data loading from " + directoryPath + " after " + total_duration_s + " s.", e);
+      LOGGER.log(Level.SEVERE, errorType + " during data loading from " + directoryPath + " s.", e);
       success = false;
       clearData();
     }
@@ -86,21 +79,15 @@ public class Parser {
   public Map<String, List<StopTime>> getStopTimesMap() { return stop_times_map; }
 
   private void sortStopTimesBySequence() {
-    LOGGER.info("Sorting stop times by sequence for all trips...");
-    long start_time = System.nanoTime();
     Comparator<StopTime> sequence_comparator = Comparator.comparingInt(StopTime::getSequence);
     for (List<StopTime> schedule_list : stop_times_map.values()) {
       if (schedule_list != null) { // Only sort if needed
         schedule_list.sort(sequence_comparator);
       }
     }
-    long end_time = System.nanoTime();
-    long duration_s = TimeUnit.NANOSECONDS.toSeconds(end_time - start_time);
-    LOGGER.info("Finished sorting stop times. Duration: " + duration_s + " seconds.");
   }
 
   private void parseRoutes(String route_file_path) throws IOException, CsvValidationException {
-    LOGGER.info("Parsing routes from file: " + route_file_path);
     try (CSVReader reader = new CSVReader(new FileReader(route_file_path))) {
       String[] next_line;
       long line_index = 1;
@@ -116,25 +103,24 @@ public class Parser {
             String route_type = next_line[3];
 
             if (id == null || id.isEmpty()) {
-              LOGGER.warning("Skipping route line " + line_index + ": " + route_file_path + ": Missing ID");
+              LOGGER.log(Level.WARNING, "Skipping route line {0}: {1}: Missing ID", new Object[]{line_index, route_file_path});
               continue;
             }
 
             Route route = new Route(id, route_short_name, route_long_name, route_type);
             routes_map.put(id, route);
           } catch (Exception e) {
-            LOGGER.warning("Error processing route line " + line_index + ": " + route_file_path + ": " + e.getMessage());
-            LOGGER.fine("Problematic route data: " + String.join(",", next_line));
+            LOGGER.log(Level.WARNING, "Error processing route line {0}: {1}: {2}", new Object[]{line_index, route_file_path, e.getMessage()});
+            LOGGER.log(Level.FINE, "Problematic route data: {0}", String.join(",", next_line));
           }
         } else {
-          LOGGER.warning("Skipping route line " + line_index + ": Expected at least 4 columns, found " + next_line.length);
+          LOGGER.log(Level.WARNING, "Skipping route line {0}: Expected at least 4 columns, found {1}", new Object[]{line_index, next_line.length});
         }
       }
     }
   }
 
   private void parseStops(String stop_file_path) throws IOException, CsvValidationException {
-    LOGGER.info("Parsing stops from file: " + stop_file_path);
     try (CSVReader reader = new CSVReader(new FileReader(stop_file_path))) {
       String[] next_line;
       long line_index = 1;
@@ -150,7 +136,7 @@ public class Parser {
             String long_str = next_line[3];
 
             if (id == null || id.isEmpty()) {
-              LOGGER.warning("Skipping stop line " + line_index + ": " + stop_file_path + ": Missing ID");
+              LOGGER.log(Level.WARNING, "Skipping stop line {0}: {1}: Missing ID", new Object[]{line_index, stop_file_path});
               continue;
             }
 
@@ -160,23 +146,22 @@ public class Parser {
               if (lat_str != null && !lat_str.isEmpty()) lat = Double.parseDouble(lat_str);
               if (long_str != null && !long_str.isEmpty()) lon = Double.parseDouble(long_str);
             } catch (NumberFormatException e) {
-              LOGGER.warning("Could not parse lat/lon for stop_id '" + id + "' on line " + line_index + ": " + e.getMessage() + ". Using (0,0).");
+              LOGGER.log(Level.WARNING, "Could not parse lat/lon for stop_id ''{0}'' on line {1}: {2}. Using (0,0).", new Object[]{id, line_index, e.getMessage()});
             }
 
             Stop stop = new Stop(id, name, lat, lon);
             stops_map.put(id, stop);
           } catch (Exception e) {
-            LOGGER.warning("Error processing stop line " + line_index + ": " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Error processing stop line {0}: {1}", new Object[]{line_index, e.getMessage()});
           }
         } else {
-          LOGGER.warning("Skipping stop line " + line_index + ": Expected at least 4 fields, found " + next_line.length);
+          LOGGER.log(Level.WARNING, "Skipping stop line {0}: Expected at least 4 fields, found {1}", new Object[]{line_index, next_line.length});
         }
       }
     }
   }
   
   private void parseTrips(String trip_file_path) throws IOException, CsvValidationException {
-    LOGGER.info("Parsing trips from file: " + trip_file_path);
     try (CSVReader reader = new CSVReader(new FileReader(trip_file_path))) {
       String[] next_line;
       long line_index = 1;
@@ -189,28 +174,27 @@ public class Parser {
             String route_id = next_line[1];
             
             if (id == null || id.isEmpty() || route_id == null || route_id.isEmpty()) {
-              LOGGER.warning("Skipping trip line " + line_index + ": " + trip_file_path + ": Missing ID");
+              LOGGER.log(Level.WARNING, "Skipping trip line {0}: {1}: Missing ID", new Object[]{line_index, trip_file_path});
               continue;
             }
 
             if (!routes_map.containsKey(route_id)) {
-              LOGGER.warning("Routes map does not contain route id '" + route_id + "'.");
+              LOGGER.log(Level.WARNING, "Routes map does not contain route id ''{0}''.", route_id);
             }
 
             Trip trip = new Trip(id, route_id);
             trips_map.put(id, trip);
           } catch (Exception e) {
-            LOGGER.warning("Error processing trip line " + line_index + ": " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Error processing trip line {0}: {1}", new Object[]{line_index, e.getMessage()});
           }
         } else {
-          LOGGER.warning("Skipping trip line " + line_index + ": Expected at least 2 fields, found " + next_line.length);
+          LOGGER.log(Level.WARNING, "Skipping trip line {0}: Expected at least 2 fields, found {1}", new Object[]{line_index, next_line.length});
         }
       }
     }
   }
 
   private void parseStopTimes(String stop_time_file_path) throws IOException, CsvValidationException {
-    LOGGER.info("Parsing stop_times from file: " + stop_time_file_path);
     try (CSVReader reader = new CSVReader(new FileReader(stop_time_file_path))) {
       String[] next_line;
       long line_index = 1;
@@ -229,7 +213,7 @@ public class Parser {
                     departure_time_str == null || departure_time_str.isEmpty() ||
                     stop_id == null || stop_id.isEmpty() ||
                     stop_sequence_str == null || stop_sequence_str.isEmpty()) {
-              LOGGER.warning("Skipping stop_time line " + line_index + ": Missing required fields.");
+              LOGGER.log(Level.WARNING, "Skipping stop_time line {0}: Missing required fields.", line_index);
               continue;
             }
 
@@ -240,12 +224,12 @@ public class Parser {
             stop_schedule.add(stop_time);
 
           } catch (NumberFormatException e) {
-            LOGGER.warning("Skipping stop_time line " + line_index + ": Invalid sequence number. " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Skipping stop_time line {0}: Invalid sequence number. {1}", new Object[]{line_index, e.getMessage()});
           } catch (Exception e) {
-            LOGGER.warning("Error processing stop_time line " + line_index + ": " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Error processing stop_time line {0}: {1}", new Object[]{line_index, e.getMessage()});
           }
         } else {
-          LOGGER.warning("Skipping stop_time line " + line_index + ": Expected at least 4 fields, found " + next_line.length);
+          LOGGER.log(Level.WARNING, "Skipping stop_time line {0}: Expected at least 4 fields, found {1}", new Object[]{line_index, next_line.length});
         }
       }
     }

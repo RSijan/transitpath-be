@@ -1,8 +1,4 @@
 package model;
-
-import model.Edge;
-import model.Stop;
-
 public class TripEdge implements Edge {
   private final Stop target_stop;
   private final int departure_time_sec;

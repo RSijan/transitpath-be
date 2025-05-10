@@ -1,8 +1,5 @@
 package model;
 
-import model.Edge;
-import model.Stop;
-
 public class WalkingEdge implements Edge {
   private final Stop target_stop;
   private final int duration_sec;

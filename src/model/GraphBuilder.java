@@ -1,15 +1,11 @@
 package model;
 
-import utils.TransitDurationCalculator;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import java.util.Comparator;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
+import utils.TransitDurationCalculator;
 
 public class GraphBuilder {
   // Adjacency list
@@ -34,20 +30,16 @@ public class GraphBuilder {
   }
 
   public void buildGraph() {
-    LOGGER.info("Starting graph construction...");
-    long start_time = System.nanoTime();
 
     // Put every stop in the graph as a node
     for (String stop_id : stops_.keySet()) {
       graph.put(stop_id, new ArrayList<>());
     }
-    LOGGER.info("Initialized graph with " + graph.size() + " potential nodes. ");
 
     // put trip edges to graph
     for (var entry : trips_.entrySet()) {
       String trip_id = entry.getKey();
       List<StopTime> stop_times = stop_times_.get(trip_id);
-      List<Edge> edges = new ArrayList<>();
       for (int i = 0; i < stop_times.size() - 1; i++) {
         // Current stop time & Next stop time
         StopTime stop_time = stop_times.get(i);
@@ -88,17 +80,14 @@ public class GraphBuilder {
     });
 
     // DEBUG
-    long end_time = System.nanoTime();
-    long duration_s = TimeUnit.NANOSECONDS.toSeconds(end_time - start_time);
     LOGGER.info("Graph construction complete.");
-    LOGGER.info("Total graph build duration: " + duration_s + " s.");
 
-    long total_edges = 0;
-    for (List<Edge> edge : graph.values()) {
-      total_edges += edge.size();
-    }
-
-    LOGGER.info("Total number of edges in graph: " + total_edges);
-    LOGGER.info("Total number of nodes in graph: " + graph.size());
+    // long total_edges = 0;
+    // for (List<Edge> edge : graph.values()) {
+    //   total_edges += edge.size();
+    // }
+    // DEBUG
+    // LOGGER.info(String.format("Total number of edges in graph: %d", total_edges));
+    // LOGGER.info(String.format("Total number of nodes in graph: %d", graph.size()));
   }
 }
