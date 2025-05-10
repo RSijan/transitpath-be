@@ -2,7 +2,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import model.*;
-import pathfinder.ShortestPathFinder;
+import pathfinder.*;
+import utils.InputHandler;
 
 public class Main {
 
@@ -12,7 +13,6 @@ public class Main {
     System.out.println("--------------------------------------------------------");
     System.out.println("Please wait while we load the transit data...");
     System.out.println("--------------------------------------------------------");
-    System.out.println("Searching for the shortest path between");
 
     String base_GTFS_directory = "GTFS";
     List<String> agencies = Arrays.asList("DELIJN", "SNCB", "STIB", "TEC");
@@ -20,8 +20,6 @@ public class Main {
     List<String> dir_list = agencies.stream()
             .map(agency -> base_GTFS_directory + "/" + agency)
             .toList();
-
-    dir_list.forEach(path -> System.out.println("- " + path));
 
     Parser parser = new Parser();
     boolean success = parser.loadData(dir_list);
@@ -41,10 +39,30 @@ public class Main {
       System.out.println("Transit data loaded successfully.");
       System.out.println("--------------------------------------------------------");
 
+      
       ShortestPathFinder shortestPathFinder = new ShortestPathFinder(graph, routes, stops, trips);
-      shortestPathFinder.aStar("DELIJN-509014",
-              "SNCB-S8866654",
-              37800);
+
+      InputHandler inputHandler = new InputHandler(stops);
+      inputHandler.handleInput();
+      String start_stop_id = inputHandler.getStartingStopId();
+      String destination_stop_id = inputHandler.getDestinationStopId();
+      int departure_time_seconds = inputHandler.getDepartureTimeSeconds();
+      int preference = inputHandler.getPreference();
+
+      Stop start_stop = stops.get(start_stop_id);
+      Stop destination_stop = stops.get(destination_stop_id);
+
+      System.out.println("--------------------------------------------------------");
+      System.out.println("Finding path from " + start_stop.getName() + " to " + destination_stop.getName());
+      System.out.println("--------------------------------------------------------");
+
+      List<String> result = shortestPathFinder.aStar(start_stop_id, destination_stop_id, departure_time_seconds, preference);
+  
+
+      for (String path: result) {
+        System.out.println(path);
+      }
+
     } else {
       System.err.println("Data loading process FAILED .");
     }

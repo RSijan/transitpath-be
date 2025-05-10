@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import utils.TransitDurationCalculator;
 
@@ -31,14 +30,11 @@ public class GraphBuilder {
   }
 
   public void buildGraph() {
-    LOGGER.info("Starting graph construction...");
-    long start_time = System.nanoTime();
 
     // Put every stop in the graph as a node
     for (String stop_id : stops_.keySet()) {
       graph.put(stop_id, new ArrayList<>());
     }
-    LOGGER.info(String.format("Initialized graph with %d potential nodes. ", graph.size()));
 
     // put trip edges to graph
     for (var entry : trips_.entrySet()) {
@@ -84,17 +80,14 @@ public class GraphBuilder {
     });
 
     // DEBUG
-    long end_time = System.nanoTime();
-    long duration_s = TimeUnit.NANOSECONDS.toSeconds(end_time - start_time);
     LOGGER.info("Graph construction complete.");
-    LOGGER.info(String.format("Total graph build duration: %d s.", duration_s));
 
-    long total_edges = 0;
-    for (List<Edge> edge : graph.values()) {
-      total_edges += edge.size();
-    }
-
-    LOGGER.info(String.format("Total number of edges in graph: %d", total_edges));
-    LOGGER.info(String.format("Total number of nodes in graph: %d", graph.size()));
+    // long total_edges = 0;
+    // for (List<Edge> edge : graph.values()) {
+    //   total_edges += edge.size();
+    // }
+    // DEBUG
+    // LOGGER.info(String.format("Total number of edges in graph: %d", total_edges));
+    // LOGGER.info(String.format("Total number of nodes in graph: %d", graph.size()));
   }
 }

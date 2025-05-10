@@ -20,7 +20,7 @@ public class ShortestPathFinder {
     trips_ = trips;
   }
 
-  public List<String> aStar(String start_stop_id, String target_stop_id, int departureTimeSec){
+  public List<String> aStar(String start_stop_id, String target_stop_id, int departureTimeSec, int preference){
     Stop target_stop = stops_.get(target_stop_id);
     Map<String, Integer> h_cache = new HashMap<>();
     for (String id : stops_.keySet()) {
