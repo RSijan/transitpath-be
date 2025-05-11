@@ -71,13 +71,13 @@ public class InputHandler {
    * Validates and parses a user’s preference input.
    *
    * This method performs the following checks in order:
-   * If the input is null, empty, or contains only whitespace, returns 0.</li>
-   * If the input length exceeds 2 characters, prints an error message and returns -1.</li>
-   * If the input is a single character between '1' and '6', returns its integer value.</li>
+   * If the input is null, empty, or contains only whitespace, returns 0.
+   * If the input length exceeds 2 characters, prints an error message and returns -1.
+   * If the input is a single character between '1' and '6', returns its integer value.
    * If the input is two distinct characters each between '1' and '6', returns the combined
-   *    two‐digit integer (e.g., "23" → 23).</li>
+   *    two‐digit integer (e.g., "23" → 23).
    * For any other case (invalid characters, duplicate digits in a two‐character string),
-   *     returns 0.</li>
+   *     returns 0.
    *
    * @param input the raw preference string to validate and parse
    * @return the parsed preference as an integer
@@ -110,11 +110,21 @@ public class InputHandler {
     return preference;
   }
 
+  /**
+   * Ask the user for a stop name and handles the input.
+   *
+   * This method prompts the user to enter a stop name, validates the input, and returns
+   * the selected stop ID.
+   * 
+   * @return The ID of the selected stop.
+   */
   public String askAndHandleStopInput() {
     String input = System.console().readLine();
     if (!isValidStringInput(input)) {
       return askAndHandleStopInput();
     }
+
+    // Get similar stops
     List<String> similarStops = getSimilarStops(input);
     while (similarStops.isEmpty()) {
       System.out.println("No similar stops found. Please try again:");
@@ -127,7 +137,7 @@ public class InputHandler {
 
     System.out.println("Found following stops:");
     System.out.println("--------------------------------------------------------");
-    for (int i = 0; i < similarStops.size(); i++) {
+    for (int i = 0; i < similarStops.size(); i++) { // Print the stop name with the index
       System.out.println((i + 1) + ". " + getStopName(similarStops.get(i)));
     }
     System.out.println("--------------------------------------------------------");
@@ -172,16 +182,16 @@ public class InputHandler {
     System.out.println("--------------------------------------------------------");
     System.out.println("Please enter the departure time in (HH:MM) format. Example is 09:30 :");
     String input = System.console().readLine();
-    if (!isValidStringInput(input)) {
+  
+    // Check if the input is null or not in the correct format
+    if (input == null || !input.matches("\\d{2}:\\d{2}")) {
+      System.out.println("Invalid time format or empty. Please enter a valid time with HH:MM format:");
       return askAndHandleTimeInput();
     }
-    String[] timeParts = input.split(":");
-    if (timeParts.length != 2) {
-      System.out.println("Invalid time format. Please enter the time in HH:MM format:");
-      return askAndHandleTimeInput();
-    }
-    int hours = Integer.parseInt(timeParts[0]);
-    int minutes = Integer.parseInt(timeParts[1]);
+
+    String[] time_parts = input.split(":");
+    int hours = Integer.parseInt(time_parts[0]);
+    int minutes = Integer.parseInt(time_parts[1]);
     if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
       System.out.println("Invalid time. Please enter a valid time in HH:MM format:");
       return askAndHandleTimeInput();
