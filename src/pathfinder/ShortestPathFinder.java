@@ -173,20 +173,34 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
 
       if (edge_taken instanceof WalkingEdge walkingEdge) {
         String previous_stop_name = stops_.get(previous_state.stop_id).getName();
+        int departure_time = previous_state.current_time_sec;
         String current_stop_name = stops_.get(current_state.stop_id).getName();
 
-        int walking_duration = walkingEdge.getDurationSec();
-        if (previous_stop_name.equals(current_stop_name) && walking_duration < 60) {
+        // Avoids  zero distance walks from stops with same name to another, like "Walk from Midi to Midi"
+        // Both are the same stop anyway, like they're next to each other or
+        // overground and underground
+        if (previous_stop_name.equals(current_stop_name)) {
           i++;
           continue;
         }
 
+        // Merge consecutive walking edges
+        int j = i + 1;
+        State current_walk_state = current_state;
+        while (j < state_chain.size() && state_chain.get(j).edge_taken instanceof WalkingEdge) {
+          current_walk_state = state_chain.get(j);
+          j++;
+        }
+
+        current_stop_name = stops_.get(current_walk_state.stop_id).getName();
+        int arrival_time = current_walk_state.current_time_sec;
+
         result.add(String.format("Walk from %s (%s) to %s (%s)",
                 previous_stop_name,
-                formatTime(previous_state.current_time_sec),
+                formatTime(departure_time),
                 current_stop_name,
-                formatTime(current_state.current_time_sec)));
-        i++;
+                formatTime(arrival_time)));
+        i = j;
         continue;
       }
       TripEdge trip_edge = (TripEdge)edge_taken;
@@ -198,6 +212,7 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
       String previous_stop_name = stops_.get(previous_state.stop_id).getName();
       String departure_time = formatTime(trip_edge.getDepartureTimeSec());
 
+      // Merge consecutive trip edges
       int j = i + 1;
       State last_state = current_state;
       while(j < state_chain.size()) {

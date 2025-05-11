@@ -65,7 +65,7 @@ public class Parser {
     if (success.get()) {
       sortStopTimesBySequence();
       double secs = (System.nanoTime() - total_start_time) / 1e9;
-      System.out.printf("Finished parsing in %.3f s.%n", secs);
+      System.out.printf("Finished parsing transit data successfully. Total time taken in %.3f s.%n", secs);
     } else {
       LOGGER.warning("One or more directories failed to load.");
       clearData();
@@ -79,15 +79,12 @@ public class Parser {
   public Map<String, List<StopTime>> getStopTimesMap() { return stop_times_map_; }
 
   private void sortStopTimesBySequence() {
-    long start_time = System.nanoTime();
     Comparator<StopTime> sequence_comparator = Comparator.comparingInt(StopTime::getSequence);
     for (List<StopTime> schedule_list : stop_times_map_.values()) {
       if (schedule_list != null) { // Only sort if needed
         schedule_list.sort(sequence_comparator);
       }
     }
-    double secs = (System.nanoTime() - start_time) / 1e9;
-    System.out.printf("Finished sorting stop times in %.3f s.%n", secs);
   }
 
   private void parseRoutes(String route_file_path) throws IOException {
@@ -208,7 +205,6 @@ public class Parser {
   }
 
   private void parseStopTimes(String stop_time_file_path) throws IOException {
-    long stop_time_parse_start = System.nanoTime();
     CsvParser parser = createParser();
     try (var reader = Files.newBufferedReader(Paths.get(stop_time_file_path))) {
       parser.beginParsing(reader);
@@ -250,8 +246,6 @@ public class Parser {
       }
       parser.stopParsing();
     }
-    double secs = (System.nanoTime() - stop_time_parse_start) / 1e9;
-    System.out.printf("Finished parsing stop times in %.3f s.%n", secs);
   }
 
   private CsvParser createParser() {

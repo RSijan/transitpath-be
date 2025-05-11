@@ -72,6 +72,7 @@ public class GraphBuilder {
 
     long trip_end_time = System.nanoTime();
     double trip_duration_s = (trip_end_time - trip_start_time) / 1e9;
+    System.out.println("--------------------------------------------------------");
     System.out.printf("Finished trip edges building successfully. Total time taken: %.3f s.%n", trip_duration_s);
 
     long walking_start_time = System.nanoTime();
@@ -107,6 +108,7 @@ public class GraphBuilder {
     long end_time = System.nanoTime();
     double total_duration_s = (end_time - start_time) / 1e9;
     System.out.printf("Finished graph building successfully. Total time taken: %.3f s.%n", total_duration_s);
+    System.out.println("--------------------------------------------------------");
 
   }
 }
