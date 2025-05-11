@@ -4,11 +4,11 @@ import model.Stop;
 
 public class TransitDurationCalculator {
 
-  private static final int EARTH_RADIUS_METERS = 6371000;
-  private static final double AVERAGE_WALKING_SPEED = 1.42;
+  private static final int EARTH_RADIUS_METERS = 6371000; // Radius of the Earth in meters
+  private static final double AVERAGE_WALKING_SPEED = 1.42; // 1.42 m/s
   private static final double MAX_TRANSPORT_SPEED =  100*1000/3600; // 100 km/h
-  private static final int MAX_WALKING_DURATION_SEC = 1200;
-  private static final int MIN_WALKING_DURATION_SEC = 30;
+  private static final int MAX_WALKING_DURATION_SEC = 900; // 15 minutes
+  private static final int MIN_WALKING_DURATION_SEC = 30; // 30 seconds
 
   private static double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     // Convert everything to radians
