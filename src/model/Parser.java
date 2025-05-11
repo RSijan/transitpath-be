@@ -236,7 +236,7 @@ public class Parser {
             int stop_sequence = Integer.parseInt(stop_sequence_str);
             StopTime stop_time = new StopTime(trip_id, departure_time_str, stop_id, stop_sequence);
 
-            List<StopTime> stop_schedule = stop_times_map_.computeIfAbsent(trip_id, _ -> new ArrayList<>());
+            List<StopTime> stop_schedule = stop_times_map_.computeIfAbsent(trip_id, _ -> new ArrayList<>(AVERAGE_STOP_SEQUENCE_LENGTH));
             stop_schedule.add(stop_time);
 
           } catch (NumberFormatException e) {

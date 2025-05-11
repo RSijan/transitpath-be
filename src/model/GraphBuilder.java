@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.stream.IntStream;
 import utils.TransitDurationCalculator;
 
@@ -17,8 +16,6 @@ public class GraphBuilder {
   private final Map<String, Stop> stops_;
   private final Map<String, Trip> trips_;
   private final Map<String, List<StopTime>> stop_times_;
-
-  private static final Logger LOGGER = Logger.getLogger(GraphBuilder.class.getName());
 
   public GraphBuilder(Map<String, Route> routes, Map<String, Stop> stops, Map<String, Trip> trips, Map<String, List<StopTime>> stop_times) {
     routes_ = routes;
@@ -83,6 +80,11 @@ public class GraphBuilder {
     List<Stop> stop_list = new ArrayList<>(stops_.values()); // Get all stops
     int n = stop_list.size(); // Number of stops
 
+    // We are parallelizing the loop to speed up the process:
+    // We use IntStream.range to create a stream of integers from 0 to n-1
+    // and then we use parallel() to process them in parallel
+    // For each stop, we check if it's within proximity of any other stop
+    // If it is, we calculate the walking duration and add the edge to the graph
     IntStream.range(0, n).parallel().forEach(i -> {
       Stop stopA = stop_list.get(i);
       for (int j = i + 1; j < n; j++) {
