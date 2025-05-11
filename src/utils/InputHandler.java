@@ -209,8 +209,6 @@ public class InputHandler {
     return preference;
   }
 
-
-
   public void handleInput() {
     System.out.println("Please enter the starting stop name:");
     starting_stop_id = askAndHandleStopInput();
