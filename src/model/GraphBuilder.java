@@ -1,10 +1,11 @@
 package model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import java.util.stream.IntStream;
 import utils.TransitDurationCalculator;
 
 public class GraphBuilder {
@@ -15,8 +16,6 @@ public class GraphBuilder {
   private final Map<String, Stop> stops_;
   private final Map<String, Trip> trips_;
   private final Map<String, List<StopTime>> stop_times_;
-
-  private static final Logger LOGGER = Logger.getLogger(GraphBuilder.class.getName());
 
   public GraphBuilder(Map<String, Route> routes, Map<String, Stop> stops, Map<String, Trip> trips, Map<String, List<StopTime>> stop_times) {
     routes_ = routes;
@@ -30,11 +29,15 @@ public class GraphBuilder {
   }
 
   public void buildGraph() {
+    long start_time = System.nanoTime();
+    long trip_start_time = System.nanoTime();
+    graph.clear(); // Clear the graph before building it
 
     // Put every stop in the graph as a node
-    for (String stop_id : stops_.keySet()) {
-      graph.put(stop_id, new ArrayList<>());
-    }
+    // Also we use a synchronized list to avoid locking it each time we add an edge
+    stops_.keySet().forEach(stopId ->
+      graph.put(stopId, Collections.synchronizedList(new ArrayList<>()))
+    );
 
     // put trip edges to graph
     for (var entry : trips_.entrySet()) {
@@ -51,7 +54,6 @@ public class GraphBuilder {
 
         // Current stop & next stop
         String current_stop_id = stop_time.getStopId();
-        Stop current_stop = stops_.get(current_stop_id);
         String next_stop_id = next_stop_time.getStopId();
         Stop next_stop = stops_.get(next_stop_id);
 
@@ -59,35 +61,52 @@ public class GraphBuilder {
         String route_id = trips_.get(trip_id).getRouteID();
         String route_type = routes_.get(route_id).getRouteType();
 
+        // Make the edge to the graph
         TripEdge edge = new TripEdge(next_stop, departure_time_sec, arrival_time_sec, trip_id, route_type);
-        graph.computeIfAbsent(current_stop_id, k -> new ArrayList<>()).add(edge);
+
+        // Add the edge to the graph
+        // We use computeIfAbsent here to insert a list if the stop doesn't exist yet in the graph
+        graph.computeIfAbsent(current_stop_id, _ -> new ArrayList<>()).add(edge);
       }
     }
 
+    long trip_end_time = System.nanoTime();
+    double trip_duration_s = (trip_end_time - trip_start_time) / 1e9;
+    System.out.printf("Finished trip edges building successfully. Total time taken: %.3f s.%n", trip_duration_s);
+
+    long walking_start_time = System.nanoTime();
+
     // Parallely build walking edges for every stop
-    stops_.values().parallelStream().forEach(stopA -> {
-      stops_.values().forEach(stopB -> {
-        if (!stopA.equals(stopB) && stopA.isWithinProximity(stopB)) {
+    List<Stop> stop_list = new ArrayList<>(stops_.values()); // Get all stops
+    int n = stop_list.size(); // Number of stops
+
+    // We are parallelizing the loop to speed up the process:
+    // We use IntStream.range to create a stream of integers from 0 to n-1
+    // and then we use parallel() to process them in parallel
+    // For each stop, we check if it's within proximity of any other stop
+    // If it is, we calculate the walking duration and add the edge to the graph
+    IntStream.range(0, n).parallel().forEach(i -> {
+      Stop stopA = stop_list.get(i);
+      for (int j = i + 1; j < n; j++) {
+        Stop stopB = stop_list.get(j);
+        if (stopA.isWithinProximity(stopB)) {
           int walkDuration = TransitDurationCalculator.calculateWalkDuration(stopA, stopB);
           if (walkDuration != Integer.MAX_VALUE) {
-            synchronized (graph) {
-              graph.get(stopA.getId()).add(new WalkingEdge(stopB, walkDuration));
-              graph.get(stopB.getId()).add(new WalkingEdge(stopA, walkDuration));
-            }
+            String stopA_id = stopA.getId(), stopB_id = stopB.getId();
+            graph.get(stopA_id).add(new WalkingEdge(stopB, walkDuration));
+            graph.get(stopB_id).add(new WalkingEdge(stopA, walkDuration));
           }
         }
-      });
+      }
     });
-
     // DEBUG
-    LOGGER.info("Graph construction complete.");
+    long walking_end_time = System.nanoTime();
+    double walking_duration_s = (walking_end_time - walking_start_time) / 1e9;
+    System.out.printf("Finished walking edges building successfully. Total time taken: %.3f s.%n", walking_duration_s);
 
-    // long total_edges = 0;
-    // for (List<Edge> edge : graph.values()) {
-    //   total_edges += edge.size();
-    // }
-    // DEBUG
-    // LOGGER.info(String.format("Total number of edges in graph: %d", total_edges));
-    // LOGGER.info(String.format("Total number of nodes in graph: %d", graph.size()));
+    long end_time = System.nanoTime();
+    double total_duration_s = (end_time - start_time) / 1e9;
+    System.out.printf("Finished graph building successfully. Total time taken: %.3f s.%n", total_duration_s);
+
   }
 }

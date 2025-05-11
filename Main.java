@@ -12,6 +12,7 @@ public class Main {
     System.out.println("Welcome to the Fastest Transit Path Finder!");
     System.out.println("--------------------------------------------------------");
     System.out.println("Please wait while we load the transit data...");
+    long transit_load_start = System.nanoTime();
     System.out.println("--------------------------------------------------------");
 
     String base_GTFS_directory = "GTFS";
@@ -36,7 +37,8 @@ public class Main {
       graphBuilder.buildGraph();
       Map<String, List<Edge>> graph = graphBuilder.getGraph();
       System.out.println("Graph construction process SUCCESSFUL.");
-      System.out.println("Transit data loaded successfully.");
+      double transit_load_duration = (System.nanoTime() - transit_load_start) / 1e9;
+      System.out.printf("Transit data loaded successfully in %.3f s.%n", transit_load_duration);
       System.out.println("--------------------------------------------------------");
 
       
