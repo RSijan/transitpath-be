@@ -1,19 +1,20 @@
 package model;
 
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvValidationException;
+import com.univocity.parsers.csv.Csv;
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
 
-import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,79 +22,83 @@ public class Parser {
 
   private static final Logger LOGGER = Logger.getLogger(Parser.class.getName());
 
-  private final Map<String, Route> routes_map = new HashMap<>();
-  private final Map<String, Stop> stops_map = new HashMap<>();
-  private final Map<String, Trip> trips_map = new HashMap<>();
-  private final Map<String, List<StopTime>> stop_times_map = new HashMap<>();
+  private final Map<String, Route>   routes_map_      = new ConcurrentHashMap<>();
+  private final Map<String, Stop>    stops_map_      = new ConcurrentHashMap<>();
+  private final Map<String, Trip>    trips_map_      = new ConcurrentHashMap<>();
+  private final Map<String, List<StopTime>> stop_times_map_ = new ConcurrentHashMap<>();
+
+  private final int AVERAGE_STOP_SEQUENCE_LENGTH = 28; // Calculated from the GTFS data
+
 
   public void clearData() {
-    routes_map.clear();
-    stops_map.clear();
-    trips_map.clear();
-    stop_times_map.clear();
+    routes_map_.clear();
+    stops_map_.clear();
+    trips_map_.clear();
+    stop_times_map_.clear();
   }
 
   public boolean loadData(List<String> directoryPath) {
     long total_start_time = System.nanoTime();
     clearData();
 
-    boolean success = true;
+    AtomicBoolean success = new AtomicBoolean(true);
 
-    try {
-      for (String path : directoryPath) {
-        Path dir = Paths.get(path);
-        if (!Files.isDirectory(dir)) {
-          LOGGER.log(Level.SEVERE, "Path {0} is not a directory.", path);
-          success = false;
-          continue;
-        }
-        String route_file_path = Paths.get(path, "routes.csv").toString();
-        String stop_file_path = Paths.get(path, "stops.csv").toString();
-        String trip_file_path = Paths.get(path, "trips.csv").toString();
-        String stop_time_file_path = Paths.get(path, "stop_times.csv").toString();
-
-        parseRoutes(route_file_path);
-        parseStops(stop_file_path);
-        parseTrips(trip_file_path);
-        parseStopTimes(stop_time_file_path);
+    directoryPath.parallelStream().forEach(path -> {
+      Path dir = Paths.get(path);
+      if (!Files.isDirectory(dir)) {
+        LOGGER.log(Level.SEVERE, "Path {0} is not a directory.", path);
+        success.set(false);
+        return;
       }
-
-      if (success) {
-        sortStopTimesBySequence();
-        // LOGGER.log(Level.INFO, "Finished all data loading and processing successfully from {0} sources. Total time: {1} s.", new Object[]{directoryPath.size(), total_duration_s});
-      } else {
-        LOGGER.warning("Failure.");
+      try {
+        parseRoutes(Paths.get(path, "routes.csv").toString());
+        parseStops (Paths.get(path, "stops.csv" ).toString());
+        parseTrips (Paths.get(path, "trips.csv" ).toString());
+        parseStopTimes(Paths.get(path, "stop_times.csv").toString());
+      } catch (IOException e) {
+        String errorType = (e instanceof IOException) ? "I/O Error" : "CSV Validation Error";
+        LOGGER.log(Level.SEVERE, errorType + " loading from " + path, e);
+        success.set(false);
       }
-    } catch (IOException | CsvValidationException e) {
-      String errorType = (e instanceof IOException) ? "I/O Error" : "CSV Validation Error";
-      LOGGER.log(Level.SEVERE, errorType + " during data loading from " + directoryPath + " s.", e);
-      success = false;
+    });
+
+    if (success.get()) {
+      sortStopTimesBySequence();
+      double secs = (System.nanoTime() - total_start_time) / 1e9;
+      System.out.printf("Finished parsing in %.3f s.%n", secs);
+    } else {
+      LOGGER.warning("One or more directories failed to load.");
       clearData();
     }
-    return success;
+    return success.get();
   }
 
-  public Map<String, Route> getRoutesMap() { return routes_map; }
-  public Map<String, Stop> getStopsMap() { return stops_map; }
-  public Map<String, Trip> getTripsMap() { return trips_map; }
-  public Map<String, List<StopTime>> getStopTimesMap() { return stop_times_map; }
+  public Map<String, Route> getRoutesMap() { return routes_map_; }
+  public Map<String, Stop> getStopsMap() { return stops_map_; }
+  public Map<String, Trip> getTripsMap() { return trips_map_; }
+  public Map<String, List<StopTime>> getStopTimesMap() { return stop_times_map_; }
 
   private void sortStopTimesBySequence() {
+    long start_time = System.nanoTime();
     Comparator<StopTime> sequence_comparator = Comparator.comparingInt(StopTime::getSequence);
-    for (List<StopTime> schedule_list : stop_times_map.values()) {
+    for (List<StopTime> schedule_list : stop_times_map_.values()) {
       if (schedule_list != null) { // Only sort if needed
         schedule_list.sort(sequence_comparator);
       }
     }
+    double secs = (System.nanoTime() - start_time) / 1e9;
+    System.out.printf("Finished sorting stop times in %.3f s.%n", secs);
   }
 
-  private void parseRoutes(String route_file_path) throws IOException, CsvValidationException {
-    try (CSVReader reader = new CSVReader(new FileReader(route_file_path))) {
+  private void parseRoutes(String route_file_path) throws IOException {
+    CsvParser parser = createParser();
+    try (BufferedReader reader = Files.newBufferedReader(Paths.get(route_file_path))) {
+      parser.beginParsing(reader);
+
       String[] next_line;
       long line_index = 1;
-      reader.readNext(); // Skip  header
 
-      while ((next_line = reader.readNext()) != null) {
+      while ((next_line = parser.parseNext()) != null) {
         line_index++;
         if (next_line.length >= 4) {
           try {
@@ -108,7 +113,7 @@ public class Parser {
             }
 
             Route route = new Route(id, route_short_name, route_long_name, route_type);
-            routes_map.put(id, route);
+            routes_map_.put(id, route);
           } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Error processing route line {0}: {1}: {2}", new Object[]{line_index, route_file_path, e.getMessage()});
             LOGGER.log(Level.FINE, "Problematic route data: {0}", String.join(",", next_line));
@@ -117,16 +122,19 @@ public class Parser {
           LOGGER.log(Level.WARNING, "Skipping route line {0}: Expected at least 4 columns, found {1}", new Object[]{line_index, next_line.length});
         }
       }
+      parser.stopParsing();
     }
   }
 
-  private void parseStops(String stop_file_path) throws IOException, CsvValidationException {
-    try (CSVReader reader = new CSVReader(new FileReader(stop_file_path))) {
+  private void parseStops(String stop_file_path) throws IOException {
+    CsvParser parser = createParser();
+    try (var reader = Files.newBufferedReader(Paths.get(stop_file_path))) {
+      parser.beginParsing(reader);
+
       String[] next_line;
       long line_index = 1;
-      reader.readNext(); // Skip header
 
-      while ((next_line = reader.readNext()) != null) {
+      while ((next_line = parser.parseNext()) != null) {
         line_index++;
         if (next_line.length >= 4) {
           try {
@@ -150,7 +158,7 @@ public class Parser {
             }
 
             Stop stop = new Stop(id, name, lat, lon);
-            stops_map.put(id, stop);
+            stops_map_.put(id, stop);
           } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Error processing stop line {0}: {1}", new Object[]{line_index, e.getMessage()});
           }
@@ -158,15 +166,19 @@ public class Parser {
           LOGGER.log(Level.WARNING, "Skipping stop line {0}: Expected at least 4 fields, found {1}", new Object[]{line_index, next_line.length});
         }
       }
+      parser.stopParsing();
     }
   }
   
-  private void parseTrips(String trip_file_path) throws IOException, CsvValidationException {
-    try (CSVReader reader = new CSVReader(new FileReader(trip_file_path))) {
+  private void parseTrips(String trip_file_path) throws IOException {
+    CsvParser parser = createParser();
+    try (var reader = Files.newBufferedReader(Paths.get(trip_file_path))) {
+      parser.beginParsing(reader);
+
       String[] next_line;
       long line_index = 1;
-      reader.readNext(); // Skip header
-      while ((next_line = reader.readNext()) != null) {
+
+      while ((next_line = parser.parseNext()) != null) {
         line_index++;
         if (next_line.length >= 2) {
           try {
@@ -178,12 +190,12 @@ public class Parser {
               continue;
             }
 
-            if (!routes_map.containsKey(route_id)) {
+            if (!routes_map_.containsKey(route_id)) {
               LOGGER.log(Level.WARNING, "Routes map does not contain route id ''{0}''.", route_id);
             }
 
             Trip trip = new Trip(id, route_id);
-            trips_map.put(id, trip);
+            trips_map_.put(id, trip);
           } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Error processing trip line {0}: {1}", new Object[]{line_index, e.getMessage()});
           }
@@ -191,16 +203,20 @@ public class Parser {
           LOGGER.log(Level.WARNING, "Skipping trip line {0}: Expected at least 2 fields, found {1}", new Object[]{line_index, next_line.length});
         }
       }
+      parser.stopParsing();
     }
   }
 
-  private void parseStopTimes(String stop_time_file_path) throws IOException, CsvValidationException {
-    try (CSVReader reader = new CSVReader(new FileReader(stop_time_file_path))) {
+  private void parseStopTimes(String stop_time_file_path) throws IOException {
+    long stop_time_parse_start = System.nanoTime();
+    CsvParser parser = createParser();
+    try (var reader = Files.newBufferedReader(Paths.get(stop_time_file_path))) {
+      parser.beginParsing(reader);
+
       String[] next_line;
       long line_index = 1;
-      reader.readNext(); // SKip header
 
-      while ((next_line = reader.readNext()) != null) {
+      while ((next_line = parser.parseNext()) != null) {
         line_index++;
         if (next_line.length >= 4) {
           try {
@@ -220,7 +236,7 @@ public class Parser {
             int stop_sequence = Integer.parseInt(stop_sequence_str);
             StopTime stop_time = new StopTime(trip_id, departure_time_str, stop_id, stop_sequence);
 
-            List<StopTime> stop_schedule = stop_times_map.computeIfAbsent(trip_id, k -> new ArrayList<>());
+            List<StopTime> stop_schedule = stop_times_map_.computeIfAbsent(trip_id, _ -> new ArrayList<>());
             stop_schedule.add(stop_time);
 
           } catch (NumberFormatException e) {
@@ -232,7 +248,18 @@ public class Parser {
           LOGGER.log(Level.WARNING, "Skipping stop_time line {0}: Expected at least 4 fields, found {1}", new Object[]{line_index, next_line.length});
         }
       }
+      parser.stopParsing();
     }
+    double secs = (System.nanoTime() - stop_time_parse_start) / 1e9;
+    System.out.printf("Finished parsing stop times in %.3f s.%n", secs);
+  }
+
+  private CsvParser createParser() {
+    CsvParserSettings settings = new CsvParserSettings();
+    settings.setHeaderExtractionEnabled(true);
+    settings.setLineSeparatorDetectionEnabled(true);
+    settings.setMaxColumns(10_000);  // high‐water mark for GTFS
+    return new CsvParser(settings);
   }
 
 }

@@ -30,7 +30,7 @@ public class GraphBuilder {
   }
 
   public void buildGraph() {
-
+    long start_time = System.nanoTime();
     // Put every stop in the graph as a node
     for (String stop_id : stops_.keySet()) {
       graph.put(stop_id, new ArrayList<>());
@@ -78,16 +78,10 @@ public class GraphBuilder {
         }
       });
     });
-
     // DEBUG
-    LOGGER.info("Graph construction complete.");
+    long end_time = System.nanoTime();
+    double total_duration_s = (end_time - start_time) / 1e9;
+    System.out.printf("Finished graph building successfully. Total time taken: %.3f s.%n", total_duration_s);
 
-    // long total_edges = 0;
-    // for (List<Edge> edge : graph.values()) {
-    //   total_edges += edge.size();
-    // }
-    // DEBUG
-    // LOGGER.info(String.format("Total number of edges in graph: %d", total_edges));
-    // LOGGER.info(String.format("Total number of nodes in graph: %d", graph.size()));
   }
 }
