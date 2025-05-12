@@ -4,3 +4,8 @@ https://www.happycoders.eu/algorithms/a-star-algorithm-java/ // For comprehensio
 
 https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/ // For comprenhension and inspiration
 
+https://github.com/uniVocity/csv-parsers-comparison // For parser decision and info
+
+
+
+

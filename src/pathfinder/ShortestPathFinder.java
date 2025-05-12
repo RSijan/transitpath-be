@@ -317,7 +317,7 @@ private int computePenalty(Edge edge, String previousTripId, int preference) {
 
         // If the user prefers less transfers and the trip ID is different from the previous one, add a penalty of 2 mins
         if (prefersLessTransfers && previousTripId != null && !te.getTripId().equals(previousTripId)) {
-            penalty += 120;
+            penalty += 300;
         }
     }
 

@@ -66,7 +66,7 @@ public class GraphBuilder {
 
         // Add the edge to the graph
         // We use computeIfAbsent here to insert a list if the stop doesn't exist yet in the graph
-        graph.computeIfAbsent(current_stop_id, _ -> new ArrayList<>()).add(edge);
+        graph.computeIfAbsent(current_stop_id, k -> new ArrayList<>()).add(edge);
       }
     }
 
