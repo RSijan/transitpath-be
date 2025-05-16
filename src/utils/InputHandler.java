@@ -6,6 +6,12 @@ import java.util.List;
 import java.util.Map;
 import model.Stop;
 
+/**
+ * This class handles user input for the public transport system.
+ * It validates and processes inputs related to stops, departure times, and preferences.
+ * 
+ * It also provides methods to retrieve stop names and similar stops based on user input.
+ */
 public class InputHandler {
 
   public Map<String, Stop> stops_;
@@ -19,15 +25,29 @@ public class InputHandler {
     stops_ = stops;
   }
 
+  /**
+   * Gets the name of a stop by its ID.
+   *
+   * @param stop_id the ID of the stop
+   * @return the stop's name, or "Unknown Stop" if it doesn't exist
+   */
   public String getStopName(String stop_id) {
-      Stop stop = stops_.get(stop_id);
-      if (stop != null) {
-          return stop.getName();
-      } else {
-          return "Unknown Stop";
-      }
+    Stop stop = stops_.get(stop_id);
+    if (stop != null) {
+        return stop.getName();
+    } else {
+        return "Unknown Stop";
+    }
   }
 
+ /**
+   * Finds stops with names similar to the input.
+   * Example: searching "Central" might return IDs for "Brussels Central", "Central Station", etc.
+   * Only one ID is returned per unique stop name.
+   *
+   * @param stopName the (partial) name to search for
+   * @return a list of matching stop IDs
+   */
   public List<String> getSimilarStops(String stopName) {
     System.out.println("Searching for similar stops to: " + stopName);
 
@@ -45,6 +65,12 @@ public class InputHandler {
     return  new ArrayList<>(unique_similar_stop_names.values());
   }
 
+   /**
+   * Checks if the given input is a valid positive integer.
+   *
+   * @param input the input string
+   * @return true if it's a number > 0, false otherwise
+   */
   public static boolean isValidIntInput(String input) {
     try {
       int input_integer = Integer.parseInt(input);
@@ -54,6 +80,13 @@ public class InputHandler {
     }
   }
 
+  /**
+   * Checks if the given string is valid input. 
+   * A valid string is not null, not empty, and between 3 and 50 characters.
+   *
+   * @param input the user input string
+   * @return true if valid, false otherwise
+   */
   public static boolean isValidStringInput(String input) {
     if (input != null && !input.trim().isEmpty()) {
       if (input.length() > 2 && input.length() < 50) {
@@ -178,6 +211,14 @@ public class InputHandler {
   }
 
 
+  /**
+   * Ask the user for a departure time and handles the input.
+   *
+   * This method prompts the user to enter a departure time in HH:MM format, validates the input,
+   * and returns the time in seconds.
+   * 
+   * @return The departure time in seconds.
+   */
   public static int askAndHandleTimeInput() {
     System.out.println("--------------------------------------------------------");
     System.out.println("Please enter the departure time in (HH:MM) format. Example is 09:30 :");
@@ -199,6 +240,14 @@ public class InputHandler {
     return hours * 3600 + minutes * 60; // Convert to seconds and return
   }
 
+   /**
+   * Prompts the user to enter their travel preferences and validates them.
+   *
+   * The user can enter up to two digits (1–6) based on predefined options,
+   * or leave it empty to skip. Repeats if the input is invalid.
+   *
+   * @return the encoded preferences as an integer (e.g., 2 or 14)
+   */
   public static int askAndHandlePreferenceInput() {
     System.out.println("Please select your preference(max. 2) (Example: 53 or 1 or 23):");
     System.out.println("--------------------------------------------------------");
@@ -219,6 +268,10 @@ public class InputHandler {
     return preference;
   }
 
+  /**
+   * Collects all required user inputs:
+   * starting stop, destination stop, departure time, and preferences.
+   */
   public void handleInput() {
     System.out.println("Please enter the starting stop name:");
     starting_stop_id = askAndHandleStopInput();
@@ -230,24 +283,31 @@ public class InputHandler {
     preference = askAndHandlePreferenceInput();
   }
 
+
+  // Getters that clear the internal state after being read:
+
+  // getter+clean for the starting stop ID
   public String getStartingStopId() {
     String temp  = starting_stop_id;
     starting_stop_id = null;
     return temp;
   }
 
+  // getter+clean for the destination stop ID
   public String getDestinationStopId() {
     String temp = destination_stop_id;
     destination_stop_id = null;
     return temp;
   }
 
+  // getter+clean for the departure time in seconds
   public int getDepartureTimeSeconds() {
     int temp = departure_time_seconds;
     departure_time_seconds = 0;
     return temp;
   }
 
+  // getter+clean for the preference
   public int getPreference() {
     int temp = preference;
     preference = 0;

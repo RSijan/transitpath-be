@@ -2,6 +2,10 @@ package utils;
 
 import model.Stop;
 
+/**
+ * This class provides utility methods to calculate estimated transit and walking durations
+ * between two stops based on their geographical coordinates.
+ */
 public class TransitDurationCalculator {
 
   private static final int EARTH_RADIUS_METERS = 6371000; // Radius of the Earth in meters

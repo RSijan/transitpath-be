@@ -4,6 +4,13 @@ import java.util.*;
 import model.*;
 import utils.TransitDurationCalculator;
 
+/**
+ * Finds the best route between two transit stops using A* search.
+ *
+ * This class works on a graph made of stops nodes and trip + walking edges.
+ * It uses user preferences (like avoiding walking or transfers) to guide the search.
+ */
+
 public class ShortestPathFinder {
   private final Map<String, List<Edge>> graph_;
   private final Map<String, Route> routes_;
@@ -171,6 +178,8 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
       State current_state = state_chain.get(i);
       Edge edge_taken = current_state.edge_taken;
 
+      // If the edge taken is a walking edge, we need to print it differently
+      // We also need to merge consecutive walking edges.
       if (edge_taken instanceof WalkingEdge walkingEdge) {
         String previous_stop_name = stops_.get(previous_state.stop_id).getName();
         int departure_time = previous_state.current_time_sec;
@@ -203,6 +212,8 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
         i = j;
         continue;
       }
+      
+      // otherwise, this is a trip edge (bus, train, tram, etc.)
       TripEdge trip_edge = (TripEdge)edge_taken;
       String agency = getAgencyFromId(trip_edge.getTripId());
       String trip_id = trip_edge.getTripId();
@@ -212,7 +223,7 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
       String previous_stop_name = stops_.get(previous_state.stop_id).getName();
       String departure_time = formatTime(trip_edge.getDepartureTimeSec());
 
-      // Merge consecutive trip edges
+      // merge consecutive trip edges
       int j = i + 1;
       State last_state = current_state;
       while(j < state_chain.size()) {
@@ -226,6 +237,7 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
         String next_route_type = routes_.get(next_route_id).getRouteType();
         String next_agency = getAgencyFromId(next_trip_id);
 
+        // stop merging if the route, type, or agency changes
         if (!next_agency.equals(agency) ||
             !next_route_number.equals(route_number) ||
             !next_route_type.equals(route_type)) {
@@ -252,6 +264,12 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
     return result;
   }
 
+  /**
+   * Converts a time in seconds into HH:MM:SS format.
+   * 
+   * @param seconds The time in seconds to format.
+   * @return A string representing the formatted time.
+   */
   private String formatTime(int seconds) {
     int hour = seconds / 3600;
     int min = seconds % 3600 / 60;
@@ -259,6 +277,12 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
     return String.format("%02d:%02d:%02d", hour, min, sec);
   }
 
+  /**
+   * Returns the agency name based on the trip ID.
+   * 
+   * @param tripId The trip ID to check.
+   * @return The agency name as a string.
+   */
   private String getAgencyFromId(String tripId) {
     if (tripId.startsWith("STIB")) return "STIB";
     if (tripId.startsWith("SNCB")) return "SNCB";
@@ -267,6 +291,11 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
     return "UNKNOWN";
   }
 
+  /**
+   * Represents a node in the A* search.
+   * Each state contains information about the current stop, time, total elapsed time,
+   * the previous state, and the edge taken to reach this state.
+   */
   private class State {
     public final String stop_id;
     public final int current_time_sec;
@@ -287,6 +316,7 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
  * This method computes the penalty based on the user's preferences and the edge type.
  * It adds penalties for walking edges if the user prefers less walking,
  * and for trip edges if the user avoids certain types of transport (train, bus, tram, metro).
+ * 
  * @param edge The edge being evaluated.
  * @param previousTripId The trip ID of the previous edge taken.
  * @param preference The user's preferences as an integer.

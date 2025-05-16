@@ -8,15 +8,22 @@ import java.util.Map;
 import java.util.stream.IntStream;
 import utils.TransitDurationCalculator;
 
+/**
+ * This class is responsible for building a graph representation of a public transport system.
+ * The graph is represented as an adjacency list, where each stop is a node and edges represent
+ * either trip connections or walking paths between stops.
+ */
 public class GraphBuilder {
   // Adjacency list
   private final Map<String, List<Edge>> graph = new HashMap<>();
 
+  // Maps to store routes, stops, trips, and stop times
   private final Map<String, Route> routes_;
   private final Map<String, Stop> stops_;
   private final Map<String, Trip> trips_;
   private final Map<String, List<StopTime>> stop_times_;
 
+  // Constructor for GraphBuilder, gets all the transit data we need to build the graph
   public GraphBuilder(Map<String, Route> routes, Map<String, Stop> stops, Map<String, Trip> trips, Map<String, List<StopTime>> stop_times) {
     routes_ = routes;
     stops_ = stops;
@@ -24,14 +31,19 @@ public class GraphBuilder {
     stop_times_ = stop_times;
   }
 
+  // getter for the graph
   public Map<String, List<Edge>> getGraph() {
     return graph;
   }
 
+  /*
+   * This method builds the graph by adding nodes (stops) and edges (trip connections and walking paths).
+   */
   public void buildGraph() {
     long start_time = System.nanoTime();
     long trip_start_time = System.nanoTime();
-    graph.clear(); // Clear the graph before building it
+    
+    graph.clear(); // Make sure the graph is empty before starting
 
     // Put every stop in the graph as a node
     // Also we use a synchronized list to avoid locking it each time we add an edge

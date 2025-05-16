@@ -18,10 +18,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * A Parser class that loads GTFS transit data from CSV files.
+ *
+ * It reads files like routes.csv, stops.csv, trips.csv, and stop_times.csv
+ * and puts them into maps so we can use later to build a transit graph or whatever.
+ *
+ * It use the Univocity CSV parser (because it's fast), and it supports loading multiple folders at once.
+ * It also sorts stop times so that they're in the right order (by sequence).
+ */
 public class Parser {
 
   private static final Logger LOGGER = Logger.getLogger(Parser.class.getName());
 
+  // Maps to store parsed data
   private final Map<String, Route>   routes_map_      = new ConcurrentHashMap<>();
   private final Map<String, Stop>    stops_map_      = new ConcurrentHashMap<>();
   private final Map<String, Trip>    trips_map_      = new ConcurrentHashMap<>();
@@ -30,6 +40,10 @@ public class Parser {
   private final int AVERAGE_STOP_SEQUENCE_LENGTH = 28; // Calculated from the GTFS data
 
 
+  /**
+   * Clears all previously loaded data.
+   * Call this before reloading from new files or folders.
+   */
   public void clearData() {
     routes_map_.clear();
     stops_map_.clear();
@@ -37,20 +51,28 @@ public class Parser {
     stop_times_map_.clear();
   }
 
+  /*
+   * Loads GTFS data from the specified directories.
+   * This method takes a list of directory paths, each containing GTFS CSV files.
+   * It parses the files and fill the maps with the parsed data.
+   *
+   * @param directoryPath list of folder paths
+   * @return true if everything loaded OK, false if something failed
+   */
   public boolean loadData(List<String> directoryPath) {
     long total_start_time = System.nanoTime();
-    clearData();
+    clearData();// reset everything first
 
     AtomicBoolean success = new AtomicBoolean(true);
 
+    // Use parallel stream to process directories concurrently ( faster :) )
     directoryPath.parallelStream().forEach(path -> {
       Path dir = Paths.get(path);
       if (!Files.isDirectory(dir)) {
         LOGGER.log(Level.SEVERE, "Path {0} is not a directory.", path);
         success.set(false);
         return;
-      }
-      try {
+      } try {
         parseRoutes(Paths.get(path, "routes.csv").toString());
         parseStops (Paths.get(path, "stops.csv" ).toString());
         parseTrips (Paths.get(path, "trips.csv" ).toString());
@@ -62,9 +84,10 @@ public class Parser {
       }
     });
 
+    // Check if all directories were loaded successfully
     if (success.get()) {
-      sortStopTimesBySequence();
-      double secs = (System.nanoTime() - total_start_time) / 1e9;
+      sortStopTimesBySequence(); // Sort stop times by sequence number
+      double secs = (System.nanoTime() - total_start_time) / 1e9; // Convert to seconds
       System.out.printf("Finished parsing transit data successfully. Total time taken in %.3f s.%n", secs);
     } else {
       LOGGER.warning("One or more directories failed to load.");
@@ -73,11 +96,13 @@ public class Parser {
     return success.get();
   }
 
+  // Getters for the maps
   public Map<String, Route> getRoutesMap() { return routes_map_; }
   public Map<String, Stop> getStopsMap() { return stops_map_; }
   public Map<String, Trip> getTripsMap() { return trips_map_; }
   public Map<String, List<StopTime>> getStopTimesMap() { return stop_times_map_; }
 
+  // Sorts each trip's stop times by their sequence number
   private void sortStopTimesBySequence() {
     Comparator<StopTime> sequence_comparator = Comparator.comparingInt(StopTime::getSequence);
     for (List<StopTime> schedule_list : stop_times_map_.values()) {
@@ -87,6 +112,12 @@ public class Parser {
     }
   }
 
+
+  /**
+   * Parses routes.csv and adds data to the routes map.
+   * 
+   * Expected columns: id, short name, long name, route type
+   */
   private void parseRoutes(String route_file_path) throws IOException {
     CsvParser parser = createParser();
     try (BufferedReader reader = Files.newBufferedReader(Paths.get(route_file_path))) {
@@ -123,6 +154,12 @@ public class Parser {
     }
   }
 
+
+  /**
+   * Parses stops.csv and adds data to the stops map.
+   * 
+   * Expected columns: id, stop_name, stop_lat, stop_lon
+   */
   private void parseStops(String stop_file_path) throws IOException {
     CsvParser parser = createParser();
     try (var reader = Files.newBufferedReader(Paths.get(stop_file_path))) {
@@ -167,6 +204,11 @@ public class Parser {
     }
   }
   
+   /**
+   * Parses trips.csv and adds data to the trips map.
+   * 
+   * Expected columns: id, route_id
+   */
   private void parseTrips(String trip_file_path) throws IOException {
     CsvParser parser = createParser();
     try (var reader = Files.newBufferedReader(Paths.get(trip_file_path))) {
@@ -204,6 +246,11 @@ public class Parser {
     }
   }
 
+   /**
+   * Parses trips.csv and adds data to the trips map.
+   * 
+   * Expected columns: id, route_id
+   */
   private void parseStopTimes(String stop_time_file_path) throws IOException {
     CsvParser parser = createParser();
     try (var reader = Files.newBufferedReader(Paths.get(stop_time_file_path))) {
@@ -231,10 +278,9 @@ public class Parser {
 
             int stop_sequence = Integer.parseInt(stop_sequence_str);
             StopTime stop_time = new StopTime(trip_id, departure_time_str, stop_id, stop_sequence);
-
             List<StopTime> stop_schedule = stop_times_map_.computeIfAbsent(trip_id, k -> new ArrayList<>(AVERAGE_STOP_SEQUENCE_LENGTH));
             stop_schedule.add(stop_time);
-
+            
           } catch (NumberFormatException e) {
             LOGGER.log(Level.WARNING, "Skipping stop_time line {0}: Invalid sequence number. {1}", new Object[]{line_index, e.getMessage()});
           } catch (Exception e) {
@@ -248,6 +294,13 @@ public class Parser {
     }
   }
 
+  /*
+   * Creates a new CsvParser instance with settings for parsing GTFS data.
+   * The settings include enabling header extraction, line separator detection,
+   * and setting a maximum number of columns.
+   * 
+   * @return A configured CsvParser instance.
+   */
   private CsvParser createParser() {
     CsvParserSettings settings = new CsvParserSettings();
     settings.setHeaderExtractionEnabled(true);
