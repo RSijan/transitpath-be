@@ -4,6 +4,13 @@ import java.util.*;
 import model.*;
 import utils.TransitDurationCalculator;
 
+/**
+ * Finds the best route between two transit stops using A* search.
+ *
+ * This class works on a graph made of stops nodes and trip + walking edges.
+ * It uses user preferences (like avoiding walking or transfers) to guide the search.
+ */
+
 public class ShortestPathFinder {
   private final Map<String, List<Edge>> graph_;
   private final Map<String, Route> routes_;
@@ -49,7 +56,7 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
     );
 
     // Start from the beginning
-    open.add(new State(start_stop_id, departureTimeSec, 0, null, null));
+    open.add(new State(start_stop_id, departureTimeSec, 0, null, null, null));
 
     Map<String, State> best = new HashMap<>();
 
@@ -86,10 +93,12 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
 
                     // Compute extra time (penalty) based on user preferences (e.g. dislikes transfers)
                     // Then the penalty is added to the total path cost, making this option look longer than it really is. so it will be avoided
-                    int penalty = computePenalty(edge,
-                        (current.edge_taken instanceof TripEdge te) ? te.getTripId() : null,
-                        preference
-                    );
+                    // int penalty = computePenalty(edge,
+                    //     (current.edge_taken instanceof TripEdge te) ? te.getTripId() : null,
+                    //     preference
+                    // );
+                    int penalty = computePenalty(edge, current.last_trip_id, preference);
+
                     int new_elapsed_time = current.total_elapsed_time + wait_time + ride_time + penalty;
                     int arrival_time = current.current_time_sec + wait_time + ride_time;
 
@@ -99,7 +108,8 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
                         arrival_time,
                         new_elapsed_time,
                         current,
-                        edge
+                        edge,
+                        trip_edge.getTripId()
                     );
 
                     open.add(next);
@@ -119,7 +129,8 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
                         current.current_time_sec + duration,
                         new_elapsed_time,
                         current,
-                        edge
+                        edge,
+                        current.last_trip_id
                     );
 
                     open.add(next);
@@ -171,6 +182,8 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
       State current_state = state_chain.get(i);
       Edge edge_taken = current_state.edge_taken;
 
+      // If the edge taken is a walking edge, we need to print it differently
+      // We also need to merge consecutive walking edges.
       if (edge_taken instanceof WalkingEdge walkingEdge) {
         String previous_stop_name = stops_.get(previous_state.stop_id).getName();
         int departure_time = previous_state.current_time_sec;
@@ -203,6 +216,8 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
         i = j;
         continue;
       }
+      
+      // otherwise, this is a trip edge (bus, train, tram, etc.)
       TripEdge trip_edge = (TripEdge)edge_taken;
       String agency = getAgencyFromId(trip_edge.getTripId());
       String trip_id = trip_edge.getTripId();
@@ -212,7 +227,7 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
       String previous_stop_name = stops_.get(previous_state.stop_id).getName();
       String departure_time = formatTime(trip_edge.getDepartureTimeSec());
 
-      // Merge consecutive trip edges
+      // merge consecutive trip edges
       int j = i + 1;
       State last_state = current_state;
       while(j < state_chain.size()) {
@@ -226,6 +241,7 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
         String next_route_type = routes_.get(next_route_id).getRouteType();
         String next_agency = getAgencyFromId(next_trip_id);
 
+        // stop merging if the route, type, or agency changes
         if (!next_agency.equals(agency) ||
             !next_route_number.equals(route_number) ||
             !next_route_type.equals(route_type)) {
@@ -252,6 +268,12 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
     return result;
   }
 
+  /**
+   * Converts a time in seconds into HH:MM:SS format.
+   * 
+   * @param seconds The time in seconds to format.
+   * @return A string representing the formatted time.
+   */
   private String formatTime(int seconds) {
     int hour = seconds / 3600;
     int min = seconds % 3600 / 60;
@@ -259,6 +281,12 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
     return String.format("%02d:%02d:%02d", hour, min, sec);
   }
 
+  /**
+   * Returns the agency name based on the trip ID.
+   * 
+   * @param tripId The trip ID to check.
+   * @return The agency name as a string.
+   */
   private String getAgencyFromId(String tripId) {
     if (tripId.startsWith("STIB")) return "STIB";
     if (tripId.startsWith("SNCB")) return "SNCB";
@@ -267,19 +295,27 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
     return "UNKNOWN";
   }
 
+  /**
+   * Represents a node in the A* search.
+   * Each state contains information about the current stop, time, total elapsed time,
+   * the previous state, and the edge taken to reach this state.
+   */
   private class State {
     public final String stop_id;
     public final int current_time_sec;
     public final int total_elapsed_time;
     public final State previous_state;
     public final Edge edge_taken;
+    public final String last_trip_id;
 
-    public State(String stop_id, int current_time_sec, int total_elapsed_time, State previous_state, Edge edge_taken) {
+    public State(String stop_id, int current_time_sec, int total_elapsed_time, State previous_state, Edge edge_taken, String last_trip_id) {
       this.stop_id = stop_id;
       this.current_time_sec = current_time_sec;
       this.total_elapsed_time = total_elapsed_time;
       this.previous_state = previous_state;
       this.edge_taken = edge_taken;
+      this.last_trip_id = last_trip_id;
+
     }
 }
 
@@ -287,6 +323,7 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
  * This method computes the penalty based on the user's preferences and the edge type.
  * It adds penalties for walking edges if the user prefers less walking,
  * and for trip edges if the user avoids certain types of transport (train, bus, tram, metro).
+ * 
  * @param edge The edge being evaluated.
  * @param previousTripId The trip ID of the previous edge taken.
  * @param preference The user's preferences as an integer.
@@ -317,7 +354,10 @@ private int computePenalty(Edge edge, String previousTripId, int preference) {
 
         // If the user prefers less transfers and the trip ID is different from the previous one, add a penalty of 2 mins
         if (prefersLessTransfers && previousTripId != null && !te.getTripId().equals(previousTripId)) {
-            penalty += 300;
+              // if (!previousTripId.equals(te.getTripId())) {
+              //     penalty += 300;
+              // }
+            penalty += 600;
         }
     }
 
