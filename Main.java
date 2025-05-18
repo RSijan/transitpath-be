@@ -1,7 +1,10 @@
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import graphbuilder.*;
 import model.*;
+import parser.*;
 import pathfinder.*;
 import utils.InputHandler;
 
@@ -15,11 +18,6 @@ public class Main {
       long transit_load_start = System.nanoTime();
       System.out.println("--------------------------------------------------------");
 
-      // Measure memory before loading
-      Runtime runtime = Runtime.getRuntime();
-      runtime.gc(); // Suggest garbage collection
-      long memBefore = runtime.totalMemory() - runtime.freeMemory();
-
       String base_GTFS_directory = "GTFS";
       List<String> agencies = Arrays.asList("DELIJN", "SNCB", "STIB", "TEC");
 
@@ -29,11 +27,6 @@ public class Main {
 
       Parser parser = new Parser();
       boolean success = parser.loadData(dir_list);
-
-      // Measure memory after parsing
-      runtime.gc();
-      long memAfterParsing = runtime.totalMemory() - runtime.freeMemory();
-
 
       if (success) {
         Map<String, Route> routes = parser.getRoutesMap();
@@ -45,18 +38,8 @@ public class Main {
         graphBuilder.buildGraph();
         Map<String, List<Edge>> graph = graphBuilder.getGraph();
 
-        // Measure memory after graph build
-        runtime.gc();
-        long memAfterGraph = runtime.totalMemory() - runtime.freeMemory();
-
         double transit_load_duration = (System.nanoTime() - transit_load_start) / 1e9;
         System.out.printf("Transit data loaded successfully in %.3f s.%n", transit_load_duration);
-        System.out.println("--------------------------------------------------------");
-
-        // Print memory usage
-        System.out.printf("Memory used after parsing: %.2f MB%n", (memAfterParsing - memBefore) / (1024.0 * 1024.0));
-        System.out.printf("Memory used after graph build: %.2f MB%n", (memAfterGraph - memAfterParsing) / (1024.0 * 1024.0));
-        System.out.printf("Total memory used: %.2f MB%n", (memAfterGraph - memBefore) / (1024.0 * 1024.0));
         System.out.println("--------------------------------------------------------");
 
         
@@ -113,17 +96,12 @@ public class Main {
     System.out.println("--------------------------------------------------------");
     System.out.println(String.format("Determining fastest path from %s to %s at %s",start_stop.getName(), destination_stop.getName(), formatTime(departure_time_seconds)));
     System.out.println("--------------------------------------------------------");
-
-    long pathStart = System.nanoTime();
     List<String> result = shortestPathFinder.aStar(start_stop_id, destination_stop_id, departure_time_seconds, preference);
-    long pathEnd = System.nanoTime();
-    double pathDuration = (pathEnd - pathStart) / 1e6; // milliseconds
 
     // Print the path
     for (String path : result) {
       System.out.println(path);
     }
-    System.out.printf("Pathfinding took %.2f ms%n", pathDuration);
   }
 
   private static String formatTime(int seconds) {

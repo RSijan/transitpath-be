@@ -1,8 +1,13 @@
-package model;
+package parser;
 
 import com.univocity.parsers.csv.Csv;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
+
+import model.Route;
+import model.Stop;
+import model.StopTime;
+import model.Trip;
 
 import java.io.BufferedReader;
 import java.io.IOException;

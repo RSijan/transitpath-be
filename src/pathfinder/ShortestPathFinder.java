@@ -84,7 +84,7 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
                 case TripEdge trip_edge -> {
                     int departure = trip_edge.getDepartureTimeSec();
 
-                    // Skip this trip if it's already left
+                    // Skip this trip if it already left
                     if (departure < current.current_time_sec) continue;
 
                     // Compute how long we wait + ride
@@ -93,10 +93,6 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
 
                     // Compute extra time (penalty) based on user preferences (e.g. dislikes transfers)
                     // Then the penalty is added to the total path cost, making this option look longer than it really is. so it will be avoided
-                    // int penalty = computePenalty(edge,
-                    //     (current.edge_taken instanceof TripEdge te) ? te.getTripId() : null,
-                    //     preference
-                    // );
                     int penalty = computePenalty(edge, current.last_trip_id, preference);
 
                     int new_elapsed_time = current.total_elapsed_time + wait_time + ride_time + penalty;
@@ -352,11 +348,8 @@ private int computePenalty(Edge edge, String previousTripId, int preference) {
         if (avoidsTram && te.getRouteType().equalsIgnoreCase("TRAM")) penalty += 300;
         if (avoidsMetro && te.getRouteType().equalsIgnoreCase("METRO")) penalty += 300;
 
-        // If the user prefers less transfers and the trip ID is different from the previous one, add a penalty of 2 mins
+        // If the user prefers less transfers and the trip ID is different from the previous one, add a penalty of 10 mins
         if (prefersLessTransfers && previousTripId != null && !te.getTripId().equals(previousTripId)) {
-              // if (!previousTripId.equals(te.getTripId())) {
-              //     penalty += 300;
-              // }
             penalty += 600;
         }
     }

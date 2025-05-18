@@ -10,5 +10,8 @@ https://en.wikipedia.org/wiki/A*_search_algorithm // For comprehension and inspi
 
 https://www.softwaretestinghelp.com/java-graph-tutorial/ // For compreshension
 
+https://www.geeksforgeeks.org/extends-vs-implements-in-java/ // For comprehension
 
+https://www.geeksforgeeks.org/what-is-java-parallel-streams/ // For comprehension
 
+https://www.geeksforgeeks.org/difference-hashmap-concurrenthashmap/ // For comprehension

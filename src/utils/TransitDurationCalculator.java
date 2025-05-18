@@ -9,7 +9,7 @@ import model.Stop;
 public class TransitDurationCalculator {
 
   private static final int EARTH_RADIUS_METERS = 6371000; // Radius of the Earth in meters
-  private static final double AVERAGE_WALKING_SPEED = 1.42; // 1.42 m/s
+  private static final double AVERAGE_WALKING_SPEED = 1.3; // 1.3 m/s
   private static final double MAX_TRANSPORT_SPEED =  100*1000/3600; // 100 km/h
   private static final int MAX_WALKING_DURATION_SEC = 900; // 15 minutes
   private static final int MIN_WALKING_DURATION_SEC = 30; // 30 seconds
@@ -23,6 +23,7 @@ public class TransitDurationCalculator {
 
     double deltaLat = lat2Rad - lat1Rad;
     double deltaLon = lon2Rad - lon1Rad;
+
     // Use haversine formula
     double a = Math.pow(Math.sin(deltaLat / 2), 2) +
                Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.pow(Math.sin(deltaLon / 2), 2);
