@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
-
 import model.Edge;
 import model.Route;
 import model.Stop;
@@ -48,7 +47,6 @@ public class GraphBuilder {
    */
   public void buildGraph() {
     long start_time = System.nanoTime();
-    long trip_start_time = System.nanoTime();
     
     graph.clear(); // Make sure the graph is empty before starting
 
@@ -88,13 +86,7 @@ public class GraphBuilder {
         graph.computeIfAbsent(current_stop_id, k -> new ArrayList<>()).add(edge);
       }
     }
-
-    long trip_end_time = System.nanoTime();
-    double trip_duration_s = (trip_end_time - trip_start_time) / 1e9;
     System.out.println("--------------------------------------------------------");
-    System.out.printf("Finished trip edges building successfully. Total time taken: %.3f s.%n", trip_duration_s);
-
-    long walking_start_time = System.nanoTime();
 
     // Parallely build walking edges for every stop
     List<Stop> stop_list = new ArrayList<>(stops_.values()); // Get all stops
@@ -118,11 +110,7 @@ public class GraphBuilder {
           }
         }
       }
-    });
-    // DEBUG
-    long walking_end_time = System.nanoTime();
-    double walking_duration_s = (walking_end_time - walking_start_time) / 1e9;
-    System.out.printf("Finished walking edges building successfully. Total time taken: %.3f s.%n", walking_duration_s);
+    });;
 
     long end_time = System.nanoTime();
     double total_duration_s = (end_time - start_time) / 1e9;
