@@ -1,6 +1,6 @@
-# ALGOF203 - Fastest Transit Path Finder
+# transitpath-be - Belgian Transit Route Optimizer
 
-ALGOF203 is a Java command-line application that computes fast public-transit itineraries across multiple Belgian operators using GTFS data.
+transitpath-be is a Java command-line application that computes fast public-transit itineraries across multiple Belgian operators using GTFS data.
 
 ## Highlights
 
@@ -109,7 +109,7 @@ java -Xmx4g -cp "bin;lib\univocity-parsers-2.9.1.jar" Main
 Example run with real GTFS data:
 
 ```text
-Welcome to the Fastest Transit Path Finder!
+Welcome to transitpath-be!
 Please wait while we load the transit data...
 Finished parsing transit data successfully. Total time taken in 18.120 s.
 Finished graph building successfully. Total time taken: 13.690 s.

@@ -13,7 +13,7 @@ public class Main {
   public static void main(String[] args) {
     try {
       System.out.println("========================================================");
-      System.out.println("Welcome to the Fastest Transit Path Finder!");
+      System.out.println("Welcome to transitpath-be!");
       System.out.println("Please wait while we load the transit data...");
       long transit_load_start = System.nanoTime();
       System.out.println("--------------------------------------------------------");
@@ -62,19 +62,19 @@ public class Main {
             running = inputHandler.askForAnotherPath();
           } catch (Exception e) {
             System.err.println("An error occurred while reading your input: " + e.getMessage());
-            System.out.println("Quitting the program. Thank you for using the Fastest Transit Path Finder!");
+            System.out.println("Quitting the program. Thank you for using transitpath-be!");
             running = false;
           }
         }
 
-        System.out.println("Thank you for using the Fastest Transit Path Finder!");
+        System.out.println("Thank you for using transitpath-be!");
       } else {
         System.err.println("Data loading process FAILED .");
       }
       System.out.println("========================================================");
     } catch (Exception e) {
       System.err.println("An error occurred during the execution of the program: " + e.getMessage());
-      System.out.println("Quitting the program. Thank you for using the Fastest Transit Path Finder!");
+      System.out.println("Quitting the program. Thank you for using transitpath-be!");
     }
   }
 
