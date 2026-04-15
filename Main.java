@@ -59,8 +59,7 @@ public class Main {
           System.out.println("--------------------------------------------------------");
           System.out.println("Would you like to find another fastest path? (y/n)");
           try {
-            String answer = System.console().readLine();
-            running = answer.equalsIgnoreCase("y");              
+            running = inputHandler.askForAnotherPath();
           } catch (Exception e) {
             System.err.println("An error occurred while reading your input: " + e.getMessage());
             System.out.println("Quitting the program. Thank you for using the Fastest Transit Path Finder!");
@@ -99,6 +98,11 @@ public class Main {
     List<String> result = shortestPathFinder.aStar(start_stop_id, destination_stop_id, departure_time_seconds, preference);
 
     // Print the path
+    if (result.isEmpty()) {
+      System.out.println("No path found for the provided input.");
+      return;
+    }
+
     for (String path : result) {
       System.out.println(path);
     }

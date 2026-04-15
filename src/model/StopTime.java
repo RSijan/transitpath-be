@@ -39,7 +39,7 @@ public class StopTime {
 
   // getter for the departure time in "HH:mm:ss" format.
   public String getDepartureTimeStr() {
-    int hours = depart_time_seconds % 3600;
+    int hours = depart_time_seconds / 3600;
     int minutes = (depart_time_seconds % 3600) / 60;
     int seconds = depart_time_seconds % 60;
     return String.format("%02d:%02d:%02d", hours, minutes, seconds);

@@ -60,6 +60,9 @@ public class GraphBuilder {
     for (var entry : trips_.entrySet()) {
       String trip_id = entry.getKey();
       List<StopTime> stop_times = stop_times_.get(trip_id);
+      if (stop_times == null || stop_times.size() < 2) {
+        continue;
+      }
       for (int i = 0; i < stop_times.size() - 1; i++) {
         // Current stop time & Next stop time
         StopTime stop_time = stop_times.get(i);
@@ -110,7 +113,7 @@ public class GraphBuilder {
           }
         }
       }
-    });;
+    });
 
     long end_time = System.nanoTime();
     double total_duration_s = (end_time - start_time) / 1e9;

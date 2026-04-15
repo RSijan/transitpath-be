@@ -39,7 +39,7 @@ public class Stop {
     }
 
     // we adjust longitude comparison based on latitude (earth isn't a square)
-    double cosLat = Math.cos(this.lat);
+    double cosLat = Math.cos(Math.toRadians(this.lat));
     double maxDisDegLon = MAX_PROXIMITY_WALKING_DISTANCE_METRES / (111000.0 * cosLat);
 
     // return false if The other stop is outside the bounding box that we set (max walking distance)

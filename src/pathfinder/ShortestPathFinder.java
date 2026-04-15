@@ -78,7 +78,8 @@ public List<String> aStar(String start_stop_id, String target_stop_id, int depar
         best.put(current.stop_id, current);
 
         // Look at every outgoing edge from this stop (either a trip or a walk)
-        for (Edge edge : graph_.get(current.stop_id)) {
+        List<Edge> outgoingEdges = graph_.getOrDefault(current.stop_id, List.of());
+        for (Edge edge : outgoingEdges) {
             switch (edge) {
                 // Case: this is a trip (bus, train, metro, etc.)
                 case TripEdge trip_edge -> {

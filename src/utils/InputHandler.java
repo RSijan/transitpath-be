@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import model.Stop;
 
 /**
@@ -14,15 +15,28 @@ import model.Stop;
  */
 public class InputHandler {
 
-  public Map<String, Stop> stops_;
+  private final Map<String, Stop> stops_;
+  private final Scanner scanner_;
 
-  public String starting_stop_id;
-  public String destination_stop_id;
-  public int departure_time_seconds;
-  public int preference;
+  private String starting_stop_id;
+  private String destination_stop_id;
+  private int departure_time_seconds;
+  private int preference;
 
   public InputHandler(Map<String, Stop> stops) {
+    this(stops, new Scanner(System.in));
+  }
+
+  public InputHandler(Map<String, Stop> stops, Scanner scanner) {
     stops_ = stops;
+    scanner_ = scanner;
+  }
+
+  private String readLine() {
+    if (!scanner_.hasNextLine()) {
+      return "";
+    }
+    return scanner_.nextLine().trim();
   }
 
   /**
@@ -152,62 +166,61 @@ public class InputHandler {
    * @return The ID of the selected stop.
    */
   public String askAndHandleStopInput() {
-    String input = System.console().readLine();
-    if (!isValidStringInput(input)) {
-      return askAndHandleStopInput();
-    }
-
-    // Get similar stops
-    List<String> similarStops = getSimilarStops(input);
-    while (similarStops.isEmpty()) {
-      System.out.println("No similar stops found. Please try again:");
-      input = System.console().readLine();
+    while (true) {
+      String input = readLine();
       if (!isValidStringInput(input)) {
         continue;
       }
-      similarStops = getSimilarStops(input);
-    }
 
-    System.out.println("Found following stops:");
-    System.out.println("--------------------------------------------------------");
-    for (int i = 0; i < similarStops.size(); i++) { // Print the stop name with the index
-      System.out.println((i + 1) + ". " + getStopName(similarStops.get(i)));
-    }
-    System.out.println("--------------------------------------------------------");
-    System.out.println((similarStops.size() + 1) + ". Search for a different stop");
-    System.out.println("--------------------------------------------------------");
-    System.out.println("Please select a stop by entering the corresponding number:");
-    System.out.println("--------------------------------------------------------");
-
-    
-    String first_selected_input = System.console().readLine();
-    while (isValidIntInput(first_selected_input) == false) {
-      System.out.println("Invalid input. Please enter a number corresponding to the given stops:");
-      first_selected_input = System.console().readLine();
-    }
-
-    int selected_idx = Integer.parseInt(first_selected_input) - 1;
-
-    if (selected_idx == similarStops.size()) {
-      System.out.println("Enter a new stop name to search: ");
-      System.out.println("--------------------------------------------------------");
-      return askAndHandleStopInput();
-    }
-
-    while (selected_idx < 0 || selected_idx >= similarStops.size()) {
-      System.out.println("Invalid selection. Please select a valid stop:");
-      String selected_input = System.console().readLine();
-      while (isValidIntInput(selected_input) == false) {
-        System.out.println("Invalid input. Please enter a number corresponding to the given stops:");
-        selected_input = System.console().readLine();
+      List<String> similarStops = getSimilarStops(input);
+      while (similarStops.isEmpty()) {
+        System.out.println("No similar stops found. Please try again:");
+        input = readLine();
+        if (!isValidStringInput(input)) {
+          continue;
+        }
+        similarStops = getSimilarStops(input);
       }
-      selected_idx = Integer.parseInt(selected_input) - 1;
-    }
 
-    String selected_stop_id = similarStops.get(selected_idx);
-    System.out.println("--------------------------------------------------------");
-    System.out.println("You selected: " + getStopName(selected_stop_id));
-    return selected_stop_id;
+      System.out.println("Found following stops:");
+      System.out.println("--------------------------------------------------------");
+      for (int i = 0; i < similarStops.size(); i++) {
+        System.out.println((i + 1) + ". " + getStopName(similarStops.get(i)));
+      }
+      System.out.println("--------------------------------------------------------");
+      System.out.println((similarStops.size() + 1) + ". Search for a different stop");
+      System.out.println("--------------------------------------------------------");
+      System.out.println("Please select a stop by entering the corresponding number:");
+      System.out.println("--------------------------------------------------------");
+
+      String first_selected_input = readLine();
+      while (!isValidIntInput(first_selected_input)) {
+        System.out.println("Invalid input. Please enter a number corresponding to the given stops:");
+        first_selected_input = readLine();
+      }
+
+      int selected_idx = Integer.parseInt(first_selected_input) - 1;
+      if (selected_idx == similarStops.size()) {
+        System.out.println("Enter a new stop name to search: ");
+        System.out.println("--------------------------------------------------------");
+        continue;
+      }
+
+      while (selected_idx < 0 || selected_idx >= similarStops.size()) {
+        System.out.println("Invalid selection. Please select a valid stop:");
+        String selected_input = readLine();
+        while (!isValidIntInput(selected_input)) {
+          System.out.println("Invalid input. Please enter a number corresponding to the given stops:");
+          selected_input = readLine();
+        }
+        selected_idx = Integer.parseInt(selected_input) - 1;
+      }
+
+      String selected_stop_id = similarStops.get(selected_idx);
+      System.out.println("--------------------------------------------------------");
+      System.out.println("You selected: " + getStopName(selected_stop_id));
+      return selected_stop_id;
+    }
   }
 
 
@@ -219,10 +232,10 @@ public class InputHandler {
    * 
    * @return The departure time in seconds.
    */
-  public static int askAndHandleTimeInput() {
+  public int askAndHandleTimeInput() {
     System.out.println("--------------------------------------------------------");
     System.out.println("Please enter the departure time in (HH:MM) format. Example is 09:30 :");
-    String input = System.console().readLine();
+    String input = readLine();
   
     // Check if the input is null or not in the correct format
     if (input == null || !input.matches("\\d{2}:\\d{2}")) {
@@ -248,7 +261,7 @@ public class InputHandler {
    *
    * @return the encoded preferences as an integer (e.g., 2 or 14)
    */
-  public static int askAndHandlePreferenceInput() {
+  public int askAndHandlePreferenceInput() {
     System.out.println("Please select your preference(max. 2) (Example: 53 or 1 or 23):");
     System.out.println("--------------------------------------------------------");
     System.out.println("-> Leave empty for no preferences.");
@@ -260,12 +273,25 @@ public class InputHandler {
     System.out.println("6. Less metro");
     System.out.println("--------------------------------------------------------");
 
-    String input = System.console().readLine();
+    String input = readLine();
     int preference = validateAndParsePreferencesInput(input);
     if (preference == -1) {
       return askAndHandlePreferenceInput();
     }
     return preference;
+  }
+
+  public boolean askForAnotherPath() {
+    while (true) {
+      String answer = readLine();
+      if (answer.equalsIgnoreCase("y")) {
+        return true;
+      }
+      if (answer.equalsIgnoreCase("n")) {
+        return false;
+      }
+      System.out.println("Invalid input. Please enter y or n:");
+    }
   }
 
   /**
